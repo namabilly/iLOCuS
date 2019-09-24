@@ -10,7 +10,7 @@ class Model:
 		self.agents = {}
 		self.num_of_agents = 0
 		self.map = []
-		
+	
 	def add_agent(self, id, position, status, sensor):
 		self.agents[id] = Agent(position, status, sensor)
 		self.num_of_agents += 1
@@ -29,6 +29,7 @@ class Model:
 		# for order in orders:
 		#	determine what each agent does
 		# self.update()
+		return True
 		
 	def get_distribution(self):
 		''' pseudo
@@ -39,6 +40,7 @@ class Model:
 		return distribution
 		or return map
 		'''
+		return map
 		
 	# should take traffic into account, posbly use gps api
 	def get_trajectories(self, source, target):
@@ -72,6 +74,13 @@ class Agent:
 		self.position = position
 		self.status = status
 		
-	
+	# visualization
+	def draw(self, canvas):
+		# 39.44 - 41.06
+		# 115.42 - 117.50
+		x = (self.position[1] - 115.42) * 500 / 2.08
+		y = (self.position[0] - 39.44) * 500 / 1.62
+		color = 'green' if self.status == 0 else 'pink'
+		point = canvas.create_oval(x, y, x+1, y+1, outline=color, fill=color)
 	
 	
