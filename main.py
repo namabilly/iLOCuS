@@ -16,13 +16,14 @@ view = View(model)
 currtime = 1446307200
 while currtime < 1446393600:
 	# currdata = filter(lambda x: currtime <= x[1] < currtime + 60, data)
-	currdata = data[np.logical_and(currtime <= data[:, 1], data[:, 1] < currtime + 60)]
+	currdata = data[np.logical_and(currtime <= data[:, 1], data[:, 1] < currtime + 120)]
 	# print(currdata)
 	for d in currdata:
 		model.add_agent(d[0], (d[2], d[3]), d[6], None)
 	# print(model.agents)
 	view.draw()
-	time.sleep(1)
+	currtime += 120
+	time.sleep(0.01)
 
 
 
