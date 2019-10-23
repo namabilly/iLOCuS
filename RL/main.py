@@ -53,12 +53,6 @@ def main():  # noqa: D103
         print arg, getattr(args, arg)
     print("")
 
-    # define model object
-
-    # dict = Dictionary(entity_path="data",
-    #                   embed_path="/media/hongbao/Study/Sailing Lab/Data/google_word2vec_vocab",
-    #                   word2vec_model_path="/media/hongbao/Study/Sailing Lab/Data/GoogleNews-vectors-negative300.bin.gz")
-
     # Initiating policy for both tasks (training and evaluating)
     policy = LinearDecayGreedyEpsilonPolicy(args.epsilon, 0, 1000000)
 
@@ -88,11 +82,9 @@ def main():  # noqa: D103
             model = Model(args=args, num_actions=4)
 
             env = Environment(sess=sess,
-                              # dict=dict,
-                              acc_threshold=0.4,
-                              add_threshold=0.8,
                               model=model,
-                              nlp_server_args=args)
+                              objective=np.ones((args.state_size,1))/args.state_size,
+                              beta=args.gamma)
 
             dqn_agent = DQNAgent(q_network=model, memory=None, policy=policy, num_actions=4,
                                  gamma=args.gamma, target_update_freq=args.target_update_freq,
