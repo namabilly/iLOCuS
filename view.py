@@ -19,6 +19,7 @@ class View:
 		win.update()
 
 	def draw(self):
+		canvas.delete('all')
 		for x in range(0, 500, 50):
 			line = canvas.create_line(-50, x, 550, x)
 			line = canvas.create_line(x, -50, x, 550)
