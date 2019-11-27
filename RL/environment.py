@@ -5,13 +5,10 @@ import numpy as np
 
 class Environment(object):
     def __init__(self,
-                 sess,
-                 model,
-                 objective
-                 beta=0.5):
-        self.sess = sess
-        self.beta = beta
-        self.model = model
+                env_size=(15, 15),
+                objective=None,
+                step_func):
+        self.env_size = env_size
         self.objective = objective
 
     '''
