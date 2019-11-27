@@ -2,15 +2,16 @@ import json
 import os
 import random
 import numpy as np
+from driver_func_test import DriverSim
 
 class Environment(object):
     def __init__(self,
                 env_size=(15, 15),
                 objective=None,
-                step_func):
+                driver_sim):
         self.env_size = env_size
         self.objective = objective
-
+        self.driver_sim = driver_sim
     '''
     Main function step
     '''
@@ -20,14 +21,11 @@ class Environment(object):
     #          reward: reward for the current pricing table
 
     def step(self, action):
-        new_state = driver_react(self.state, action)
+        new_state, is_terminal = self.driver_sim.react(self.state, action)
         reward = self._compute_reward(new_state, self.objective)
         self.state = new_state
-        feed_dict_dqn = {
-            self.model.inputs_ent: new_state,
-        }
 
-        return feed_dict_dqn, reward
+        return np.copy(new_state), reward, is_terminal
 
     '''
     Calculate reward
