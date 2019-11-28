@@ -4,7 +4,6 @@ implementations and some unimplemented classes that should be useful
 in your code. （from course 10703）
 """
 import numpy as np
-import attr
 
 
 class Policy:
@@ -95,14 +94,16 @@ class GreedyEpsilonPolicy(Policy):
         int:
           The action index chosen.
         """
-        _rand = np.random.uniform()
-        if _rand < self.epsilon:
-            return np.random.randint(0, self.num_actions)
-        else:
-            return np.argmax(q_values)
+        batch_size = q_values.shape[0]
+        _rand = np.random.rand((batch_size, 1))
+        rand_action = np.random.randint(self.num_actions, size=(batch_size, 1))
+        max_action = np.argmax(q_values, axis=1)
+        _mask = _rand < self.epsilon
+        res = _mask * rand_action + (1 - _mask) * max_action
+        return res
 
 
-class LinearDecayGreedyEpsilonPolicy(Policy):
+class LinearDecayGreedyEpsilonPolicy(GreedyEpsilonPolicy):
     """Policy with a parameter that decays linearly.
     Like GreedyEpsilonPolicy but the epsilon decays from a start value
     to an end value over k steps.
@@ -116,13 +117,11 @@ class LinearDecayGreedyEpsilonPolicy(Policy):
       The number of steps over which to decay the value.
     """
 
-    def __init__(self, policy, start_value, end_value,
-                 num_steps):  # noqa: D102
-        self.epsilon_greedy_policy = policy
+    def __init__(self, start_value, end_value, num_steps):  # noqa: D102
+        super(LinearDecayGreedyEpsilonPolicy, self).__init__(start_value, num_steps)
         self.start = start_value
         self.end = end_value
         self.num_steps = num_steps
-        self.epsilon_greedy_policy.epsilon = self.start
         self.decay_stepsize = (start_value - end_value)/num_steps
 
     def select_action(self, q_values, is_training):
@@ -141,12 +140,12 @@ class LinearDecayGreedyEpsilonPolicy(Policy):
         # if is_training then do epsilon decay,
         # otherwise use constant epsilon = 0.05
         if is_training:
-            if self.epsilon_greedy_policy.epsilon > self.end:
-                self.epsilon_greedy_policy.epsilon -= self.decay_stepsize
+            if self.epsilon > self.end:
+                self.epsilon -= self.decay_stepsize
         else:
-            self.epsilon_greedy_policy.epsilon = 0.05
-        return self.epsilon_greedy_policy.select_action(q_values)
+            self.epsilon = 0.05
+        return self.select_action(q_values)
 
     def reset(self):
         """Start the decay over at the start value."""
-        self.epsilon_greedy_policy.epsilon = self.start
+        self.epsilon = self.start

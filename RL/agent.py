@@ -124,7 +124,6 @@ class DQNAgent:
         # INITIALIZE counters and containers
         loss = []
         score = []
-        episode_len = []
         Q_update_counter = 0
         targetQ_update_counter = 0
         evaluate_counter = 0
@@ -134,69 +133,35 @@ class DQNAgent:
                 break
             # For every new episode, reset the environment and the preprocessor
             episode_counter += 1
+            episode_reward = []
             # print("********  0 Begin the training episode: ", episode_counter, ", currently ", Q_update_counter,
             # " step  *******************")
-            initial_state = env.reset()
+            prev_state = env.reset()
             for t in range(1, max_episode_length):
                 # Generate samples according to different policy
                 if self.memory.current_size > self.num_burn_in:
-                    if self.memory.index == 0:
-                        _state = self.stack_frames(self.memory.index - 1, t)
-                    else:
-                        _state = self.stack_frames(self.memory.current_size - 1, t)
-                    _tmp = self.calc_q_values(np.asarray([_state, ]), self.q_network)
-                    _action = self.policy.select_action(_tmp[0], True)
+                    fwd_states = self.memory.gen_forward_state()
+                    fwd_res = self.calc_q_values(np.asarray(fwd_states), self.q_network)
+                    _action = self.policy.select_action(fwd_res, True)
                 else:
-                    _action = np.random.randint(0, self.policy.epsilon_greedy_policy.num_actions)
+                    _action = np.random.randint(self.policy.epsilon_greedy_policy.num_actions, (225, 1))
 
+                action_map = np.reshape(_action, (15, 15))
                 # Take 1 action
-                next_state, reward, is_teminal = env.step(_action)
-
-                # Process the raw reward
-                # reward = self.preprocessor.process_reward(reward)
-                if current_lives > env.env.ale.lives():
-                    reward -= 50
-                elif current_lives < env.env.ale.lives():
-                    reward += 50
-                current_lives = env.env.ale.lives()
+                next_state, reward, is_terminal = env.step(action_map)
+                episode_reward.append(reward)
 
                 # append other infor to replay memory (action, reward, t, is_terminal)
-                self.memory.append_other(_action, reward, t, is_terminal)
+                self.memory.append(prev_state, _action, reward, t, is_terminal)
 
                 # Save the trained Q-net at 5 check points
                 Q_update_counter += 1
-                if Q_update_counter == 1:
-                    self.q_network.save(output_add + '/qnet-0of5.h5')
-                elif Q_update_counter == num_iterations // 5:
-                    self.q_network.save(output_add + '/qnet-1of5.h5')
+                if Q_update_counter % (num_iterations // 5) == 0:
+                    cp_name = Q_update_counter // (num_iterations // 5)
+                    self.q_network.save(output_add + '/qnet-{cp}.h5'.format(cp=cp_name))
                     # Save the episode_len, loss, score into files
-                    pickle.dump(episode_len, open(output_add + "/episode_length-1of5.p", "wb"))
-                    pickle.dump(loss, open(output_add + "/loss-1of5.p", "wb"))
-                    pickle.dump(score, open(output_add + "/score-1of5.p", "wb"))
-                elif Q_update_counter == num_iterations // 5 * 2:
-                    self.q_network.save(output_add + '/qnet-2of5.h5')
-                    # Save the episode_len, loss, score into files
-                    pickle.dump(episode_len, open(output_add + "/episode_length-2of5.p", "wb"))
-                    pickle.dump(loss, open(output_add + "/loss-2of5.p", "wb"))
-                    pickle.dump(score, open(output_add + "/score-2of5.p", "wb"))
-                elif Q_update_counter == num_iterations // 5 * 3:
-                    self.q_network.save(output_add + '/qnet-3of5.h5')
-                    # Save the episode_len, loss, score into files
-                    pickle.dump(episode_len, open(output_add + "/episode_length-3of5.p", "wb"))
-                    pickle.dump(loss, open(output_add + "/loss-3of5.p", "wb"))
-                    pickle.dump(score, open(output_add + "/score-3of5.p", "wb"))
-                elif Q_update_counter == num_iterations // 5 * 4:
-                    self.q_network.save(output_add + '/qnet-4of5.h5')
-                    # Save the episode_len, loss, score into files
-                    pickle.dump(episode_len, open(output_add + "/episode_length-4of5.p", "wb"))
-                    pickle.dump(loss, open(output_add + "/loss-4of5.p", "wb"))
-                    pickle.dump(score, open(output_add + "/score-4of5.p", "wb"))
-                elif Q_update_counter == num_iterations:
-                    self.q_network.save(output_add + '/qnet-5of5.h5')
-                    # Save the episode_len, loss, score into files
-                    pickle.dump(episode_len, open(output_add + "/episode_length-5of5.p", "wb"))
-                    pickle.dump(loss, open(output_add + "/loss-5of5.p", "wb"))
-                    pickle.dump(score, open(output_add + "/score-5of5.p", "wb"))
+                    pickle.dump(loss, open(output_add + "/loss-{cp}.p".format(cp=cp_name), "wb"))
+                    pickle.dump(score, open(output_add + "/score-{cp}.p".format(cp=cp_name), "wb"))
 
                 # Update the Q net using minibatch from replay memory and update the target Q net
                 if self.memory.current_size > self.num_burn_in:
@@ -207,62 +172,59 @@ class DQNAgent:
                         if evaluate_counter % 20000 == 0:
                             # if evaluate_counter % 100 == 0:
                             loss.append(tmp_value)
-                            score.append([Q_update_counter, self.evaluate(env_name, 10, max_episode_length)])
+                            # score.append([Q_update_counter, self.evaluate(env_name, 10, max_episode_length)])
                             # print("1 The average total score for 10 episodes after ", evaluate_counter, " updates is ", score[-1])
                             # print("2 The loss after ", evaluate_counter, " updates is: ", loss[-1])
-                    # Update the target Q network every self.target_update_freq steps
-                    targetQ_update_counter += 1
-                    if targetQ_update_counter == self.target_update_freq:
-                        targetQ_update_counter = 0
-                        weights = self.q_network.get_weights()
-                        target_q.set_weights(weights)
+                        # Update the target Q network every self.target_update_freq steps
+                        targetQ_update_counter += 1
+                        if targetQ_update_counter == self.target_update_freq:
+                            targetQ_update_counter = 0
+                            weights = self.q_network.get_weights()
+                            target_q.set_weights(weights)
 
                 if is_terminal:
                     break
 
-                # if it is not terminal, process the frame and append to replay memory
-                prev_frame = self.preprocessor.process_frame_for_memory(next_frame)
-                self.memory.append_frame(prev_frame)
-            # Store the episode length
-            episode_len.append(t)
+                prev_state = next_state
+            print('*********** episode {cnt} : average reward {rwd}'.format(cnt=episode_counter, rwd=episode_reward))
 
-    def evaluate(self, env_name, num_episodes, max_episode_length=None):
-        """Test your agent with a provided environment.
+    # def evaluate(self, env_name, num_episodes, max_episode_length=None):
+    #     """Test your agent with a provided environment.
         
-        You shouldn't update your network parameters here. Also if you
-        have any layers that vary in behavior between train/test time
-        (such as dropout or batch norm), you should set them to test.
-        Basically run your policy on the environment and collect stats
-        like cumulative reward, average episode length, etc.
-        You can also call the render function here if you want to
-        visually inspect your policy.
-        """
+    #     You shouldn't update your network parameters here. Also if you
+    #     have any layers that vary in behavior between train/test time
+    #     (such as dropout or batch norm), you should set them to test.
+    #     Basically run your policy on the environment and collect stats
+    #     like cumulative reward, average episode length, etc.
+    #     You can also call the render function here if you want to
+    #     visually inspect your policy.
+    #     """
 
-        # Run the policy for 20 episodes and calculate the mean total reward (final score of game)
-        env = gym.make(env_name)
-        mean_reward = 0
-        for episode in range(num_episodes):
-            initial_frame = env.reset()
-            state = np.zeros((4, 84, 84), dtype=np.float32)
-            # Preprocess the state      
-            prev_frame = self.preprocessor.process_frame_for_memory(initial_frame).astype(dtype=np.float32)
-            prev_frame = prev_frame / 255
-            state[:-1] = state[1:]
-            state[-1] = np.copy(prev_frame)
-            # Initialize the total reward and then begin an episode
-            total_reward = 0
-            for t in range(max_episode_length):
-                _tmp = self.calc_q_values(np.asarray([state, ]), self.q_network)
-                _action = self.policy.select_action(_tmp[0], False)
-                next_frame, reward, is_terminal, debug_info = env.step(_action)
-                # Use the original reward to calculate total reward
-                total_reward += reward
-                if is_terminal:
-                    break
-                # Update the state
-                prev_frame = self.preprocessor.process_frame_for_memory(next_frame).astype(dtype=np.float32)
-                prev_frame = prev_frame / 255
-                state[:-1] = state[1:]
-                state[-1] = np.copy(prev_frame)
-            mean_reward += total_reward
-        return mean_reward / num_episodes
+    #     # Run the policy for 20 episodes and calculate the mean total reward (final score of game)
+    #     env = gym.make(env_name)
+    #     mean_reward = 0
+    #     for episode in range(num_episodes):
+    #         initial_frame = env.reset()
+    #         state = np.zeros((4, 84, 84), dtype=np.float32)
+    #         # Preprocess the state      
+    #         prev_frame = self.preprocessor.process_frame_for_memory(initial_frame).astype(dtype=np.float32)
+    #         prev_frame = prev_frame / 255
+    #         state[:-1] = state[1:]
+    #         state[-1] = np.copy(prev_frame)
+    #         # Initialize the total reward and then begin an episode
+    #         total_reward = 0
+    #         for t in range(max_episode_length):
+    #             _tmp = self.calc_q_values(np.asarray([state, ]), self.q_network)
+    #             _action = self.policy.select_action(_tmp[0], False)
+    #             next_frame, reward, is_terminal, debug_info = env.step(_action)
+    #             # Use the original reward to calculate total reward
+    #             total_reward += reward
+    #             if is_terminal:
+    #                 break
+    #             # Update the state
+    #             prev_frame = self.preprocessor.process_frame_for_memory(next_frame).astype(dtype=np.float32)
+    #             prev_frame = prev_frame / 255
+    #             state[:-1] = state[1:]
+    #             state[-1] = np.copy(prev_frame)
+    #         mean_reward += total_reward
+    #     return mean_reward / num_episodes
