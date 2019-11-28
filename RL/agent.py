@@ -46,7 +46,6 @@ class DQNAgent:
 
     def __init__(self,
                  q_network,
-                 preprocessor,
                  memory,
                  policy,
                  gamma,
@@ -55,7 +54,6 @@ class DQNAgent:
                  train_freq,
                  batch_size):
         self.q_network = q_network
-        self.preprocessor = preprocessor
         self.memory = memory
         self.policy = policy
         self.gamma = gamma
@@ -104,7 +102,7 @@ class DQNAgent:
         train_loss = self.q_network.train_on_batch(x, y)
         return train_loss
 
-    def fit(self, env, env_name, output_add, num_iterations, max_episode_length=None):
+    def fit(self, env, output_dir, num_iterations, max_episode_length):
         """Fit your model to the provided environment.
         Its a good idea to print out things like loss, average reward,
         Q-values, etc to see if your agent is actually improving.
@@ -158,10 +156,10 @@ class DQNAgent:
                 Q_update_counter += 1
                 if Q_update_counter % (num_iterations // 5) == 0:
                     cp_name = Q_update_counter // (num_iterations // 5)
-                    self.q_network.save(output_add + '/qnet-{cp}.h5'.format(cp=cp_name))
+                    self.q_network.save(output_dir + '/qnet-{cp}.h5'.format(cp=cp_name))
                     # Save the episode_len, loss, score into files
-                    pickle.dump(loss, open(output_add + "/loss-{cp}.p".format(cp=cp_name), "wb"))
-                    pickle.dump(score, open(output_add + "/score-{cp}.p".format(cp=cp_name), "wb"))
+                    pickle.dump(loss, open(output_dir + "/loss-{cp}.p".format(cp=cp_name), "wb"))
+                    pickle.dump(score, open(output_dir + "/score-{cp}.p".format(cp=cp_name), "wb"))
 
                 # Update the Q net using minibatch from replay memory and update the target Q net
                 if self.memory.current_size > self.num_burn_in:
