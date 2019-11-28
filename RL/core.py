@@ -69,16 +69,16 @@ class ReplayMemory:
         self.buffer_size = max_size
         self.current_size = 0
         self.buffer = [None for _ in range(max_size)]
-        self.index = 0 # track the index where the next sample should be stored
+        self.index = -1 # track the index where the next sample should be stored
         self.look_back_steps = look_back_steps
 
     def append(self, state, action, reward, timestamp, is_terminal):
         _sample = Sample(state, action, reward, timestamp, is_terminal)
+        self.index = (self.index + 1) % self.buffer_size
         # Store the frame into replay memory
         self.buffer[self.index] = _sample
         # Update the current_size and the index for next storage
-        self.index = (self.index + 1) % self.buffer_size
-        self.current_size = max(self.current_size, self.index)
+        self.current_size = max(self.current_size, self.index + 1)
 
     def sample(self, batch_size):
         # sample a minibatch of index
@@ -92,14 +92,16 @@ class ReplayMemory:
             row, col = location // 15, location % 15
             x.append(self.stacked_retrieve(sample_index, location))
             other_infos.append((self.buffer[sample_index].action[row, col],
-                                self.buffer[sample_index].is_teminal,
+                                self.buffer[sample_index].is_terminal,
                                 self.buffer[sample_index].reward,
                                 ))
             _next_index = (sample_index + 1) % self.current_size
-            x_next.append(self.stacked_retrieve(_next_index//225, _next_index%225))
+            # print(_next_index)
+            x_next.append(self.stacked_retrieve(_next_index, location))
 
         x = np.asarray(x)
         x_next = np.asarray(x_next)
+        # print(x[0,0], x_next[0,0])
         return x, x_next, other_infos
     
     def gen_forward_state(self):

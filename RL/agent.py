@@ -8,6 +8,7 @@ from objectives import mean_huber_loss
 
 import numpy as np
 import pickle
+import gc
 
 class DQNAgent:
     """Class implementing DQN.
@@ -89,16 +90,18 @@ class DQNAgent:
         x, x_next, other_infos = self.memory.sample(self.batch_size)
 
         y = self.calc_q_values(x, self.q_network)  # reserve the order in mini_batch
+        # print(y)
+        # print(x)
         y_next = self.calc_q_values(x_next, target_q)  # reserve the order in mini_batch
+        # print(x_next)
         y_max = np.amax(y_next, axis=1)
-
         # Q learning update
         for _sample_index, (action, is_terminal, reward) in enumerate(other_infos):
             if is_terminal:
                 y[_sample_index, action] = reward
             else:
                 y[_sample_index, action] = reward + self.gamma * y_max[_sample_index]
-
+        # print(y)
         train_loss = self.q_network.train_on_batch(x, y)
         return train_loss
 
@@ -129,6 +132,7 @@ class DQNAgent:
         while True:
             if Q_update_counter > num_iterations:
                 break
+            gc.collect()
             # For every new episode, reset the environment and the preprocessor
             episode_counter += 1
             episode_reward = []
@@ -142,7 +146,7 @@ class DQNAgent:
                     fwd_res = self.calc_q_values(np.asarray(fwd_states), self.q_network)
                     _action = self.policy.select_action(fwd_res, True)
                 else:
-                    _action = np.random.randint(self.policy.epsilon_greedy_policy.num_actions, (225, 1))
+                    _action = np.random.randint(self.policy.num_actions, size=(225, 1))
 
                 action_map = np.reshape(_action, (15, 15))
                 # Take 1 action
@@ -150,7 +154,7 @@ class DQNAgent:
                 episode_reward.append(reward)
 
                 # append other infor to replay memory (action, reward, t, is_terminal)
-                self.memory.append(prev_state, _action, reward, t, is_terminal)
+                self.memory.append(prev_state, action_map, reward, t, is_terminal)
 
                 # Save the trained Q-net at 5 check points
                 Q_update_counter += 1
@@ -166,6 +170,8 @@ class DQNAgent:
                     # Update the Q network every self.train_freq steps
                     if Q_update_counter % self.train_freq == 0:
                         tmp_value = [Q_update_counter, self.update_policy(target_q)]
+                        print('Update {cnt} times, loss {loss}'.format(cnt=tmp_value[0],loss=tmp_value[1]))
+                        # print('action', action_map)
                         evaluate_counter += 1
                         if evaluate_counter % 20000 == 0:
                             # if evaluate_counter % 100 == 0:
@@ -184,7 +190,8 @@ class DQNAgent:
                     break
 
                 prev_state = next_state
-            print('*********** episode {cnt} : average reward {rwd}'.format(cnt=episode_counter, rwd=episode_reward))
+            mean_reward = sum(episode_reward) / len(episode_reward)
+            print('*********** episode {cnt} : average reward {rwd}'.format(cnt=episode_counter, rwd=mean_reward))
 
     # def evaluate(self, env_name, num_episodes, max_episode_length=None):
     #     """Test your agent with a provided environment.

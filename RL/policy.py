@@ -1,12 +1,12 @@
 """RL Policy classes.
 We have provided you with a base policy class, some example
 implementations and some unimplemented classes that should be useful
-in your code. （from course 10703）
+in your code. (from course 10703)
 """
 import numpy as np
 
 
-class Policy:
+class Policy(object):
     """Base class representing an MDP policy.
     Policies are used by the agent to choose actions.
     Policies are designed to be stacked to get interesting behaviors
@@ -95,9 +95,10 @@ class GreedyEpsilonPolicy(Policy):
           The action index chosen.
         """
         batch_size = q_values.shape[0]
-        _rand = np.random.rand((batch_size, 1))
+        _rand = np.random.rand(batch_size, 1)
         rand_action = np.random.randint(self.num_actions, size=(batch_size, 1))
         max_action = np.argmax(q_values, axis=1)
+        max_action = np.reshape(max_action, (-1,1))
         _mask = _rand < self.epsilon
         res = _mask * rand_action + (1 - _mask) * max_action
         return res
@@ -117,8 +118,8 @@ class LinearDecayGreedyEpsilonPolicy(GreedyEpsilonPolicy):
       The number of steps over which to decay the value.
     """
 
-    def __init__(self, start_value, end_value, num_steps):  # noqa: D102
-        super(LinearDecayGreedyEpsilonPolicy, self).__init__(start_value, num_steps)
+    def __init__(self, start_value, end_value, num_steps, num_actions):  # noqa: D102
+        super(LinearDecayGreedyEpsilonPolicy, self).__init__(start_value, num_actions)
         self.start = start_value
         self.end = end_value
         self.num_steps = num_steps
@@ -144,7 +145,7 @@ class LinearDecayGreedyEpsilonPolicy(GreedyEpsilonPolicy):
                 self.epsilon -= self.decay_stepsize
         else:
             self.epsilon = 0.05
-        return self.select_action(q_values)
+        return super(LinearDecayGreedyEpsilonPolicy, self).select_action(q_values)
 
     def reset(self):
         """Start the decay over at the start value."""

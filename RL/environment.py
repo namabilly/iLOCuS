@@ -15,8 +15,6 @@ class Environment(object):
         else:
             self.objective = objective
         self.objective /= np.sum(self.objective)
-
-        self.objective = objective
         self.driver_sim = driver_sim
 
     def reset(self):
@@ -34,7 +32,7 @@ class Environment(object):
         new_state, is_terminal = self.driver_sim.react(action)
         # new_state shape: (4, 15, 15)
         reward = self._compute_reward(new_state[2,:,:], self.objective)
-
+        # print(reward)
         return np.copy(new_state), reward, is_terminal
 
     '''
@@ -48,5 +46,5 @@ class Environment(object):
         state /= np.sum(state)
 
         # KL divergence
-        return np.sum(np.where(state != 0, state * np.log(state / objective), 0))
+        return -np.sum(np.where(state != 0, state * np.log(state / objective), 0))
         
