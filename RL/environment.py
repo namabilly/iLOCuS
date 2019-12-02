@@ -40,7 +40,7 @@ class Environment(object):
     '''
     # compute the reward given the current distribution of taxis and desired distribution.
     def _compute_reward(self, state, objective):
-        state = np.copy(state)
+        state = np.copy(state) + 1e-7
 
         # normalize
         state /= np.sum(state)

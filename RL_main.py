@@ -32,8 +32,9 @@ def main():  # noqa: D103
                         help="Frequency for copying weights to target network")
     parser.add_argument("--num_iterations", default=5000000, type=int,
                         help="Number of overal interactions to the environment")
-    parser.add_argument("--max_episode_length", default=1000, type=int, help="Terminate earlier for one episode")
+    parser.add_argument("--max_episode_length", default=1200, type=int, help="Terminate earlier for one episode")
     parser.add_argument("--train_freq", default=8, type=int, help="Frequency for training")
+    parser.add_argument("--train_interv", default=8, type=int, help="interval for training")
     parser.add_argument("--num-burn-in", default=100, type=int, help="number of memory before train")
 
     parser.add_argument("-o", "--output", default="ilocus-v0", type=str, help="Directory to save data to")
@@ -48,7 +49,7 @@ def main():  # noqa: D103
     parser.add_argument("--save_freq", default=100000, type=int, help="model save frequency")
 
     # memory related args
-    parser.add_argument("--buffer_size", default=1000, type=int, help="reply memory buffer size")
+    parser.add_argument("--buffer_size", default=4000, type=int, help="reply memory buffer size")
     parser.add_argument("--look_back_steps", default=4, type=int, help="how many previous pricing tables will be fed into RL")
     
     args = parser.parse_args()
@@ -56,42 +57,50 @@ def main():  # noqa: D103
     for arg in vars(args):
         print(arg, getattr(args, arg))
 
+    if os.path.exists(args.output):
+        shutil.rmtree(args.output)
+    os.mkdir(args.output)
+    
+    if os.path.exists(args.log_dir):
+        shutil.rmtree(args.log_dir)
+    os.mkdir(args.log_dir)
     # Initiating policy for both tasks (training and evaluating)
-    policy = LinearDecayGreedyEpsilonPolicy(args.epsilon, 0.1, 1000000, args.num_actions)
+    policy = LinearDecayGreedyEpsilonPolicy(start_value=1, end_value=0.1, 
+                                            num_steps=1000000, num_actions=args.num_actions)
 
-    if not args.train:
-        '''Evaluate the model'''
-        # check model path
-        if args.model_path is '':
-            print("Model path must be set when evaluate")
-            exit(1)
+    # if not args.train:
+    #     '''Evaluate the model'''
+    #     # check model path
+    #     if args.model_path is '':
+    #         print("Model path must be set when evaluate")
+    #         exit(1)
 
-        # specific log file to save result
-        log_file = os.path.join(args.log_dir, args.network_name, str(args.model_num))
-        model_dir = os.path.join(args.model_path, args.network_name, str(args.model_num))
+    #     # specific log file to save result
+    #     log_file = os.path.join(args.log_dir, args.network_name, str(args.model_num))
+    #     model_dir = os.path.join(args.model_path, args.network_name, str(args.model_num))
 
-        with tf.Session() as sess:
-            # load model
-            # with open(model_dir + ".json", 'r') as json_file:
-            #     loaded_model_json = json_file.read()
-            #     q_network_online = model_from_json(loaded_model_json)
-            #     q_network_target = model_from_json(loaded_model_json)
-            #
-            # sess.run(tf.global_variables_initializer())
-            #
-            # # load weights into model
-            # q_network_online.load_weights(model_dir + ".h5")
-            # q_network_target.load_weights(model_dir + ".h5")
+    #     with tf.Session() as sess:
+    #         # load model
+    #         # with open(model_dir + ".json", 'r') as json_file:
+    #         #     loaded_model_json = json_file.read()
+    #         #     q_network_online = model_from_json(loaded_model_json)
+    #         #     q_network_target = model_from_json(loaded_model_json)
+    #         #
+    #         # sess.run(tf.global_variables_initializer())
+    #         #
+    #         # # load weights into model
+    #         # q_network_online.load_weights(model_dir + ".h5")
+    #         # q_network_target.load_weights(model_dir + ".h5")
 
-            driver_sim = Drivers()
-            env = Environment(driver_sim=driver_sim)
+    #         driver_sim = Drivers()
+    #         env = Environment(driver_sim=driver_sim)
 
-            memory = ReplayMemory(args.buffer_size, args.look_back_steps)
-            q_network = create_model(args.look_back_steps, args.map_shape, args.num_actions)
-            dqn_agent = DQNAgent(q_network=q_network, memory=memory, policy=policy, gamma=args.gamma, 
-                                target_update_freq=args.target_update_freq, num_burn_in=args.num_burn_in, 
-                                train_freq=args.train_freq, batch_size=args.batch_size)
-        exit(0)
+    #         memory = ReplayMemory(args.buffer_size, args.look_back_steps)
+    #         q_network = create_model(args.look_back_steps, args.map_shape, args.num_actions)
+    #         dqn_agent = DQNAgent(q_network=q_network, memory=memory, policy=policy, gamma=args.gamma, 
+    #                             target_update_freq=args.target_update_freq, num_burn_in=args.num_burn_in, 
+    #                             train_freq=args.train_freq, batch_size=args.batch_size)
+    #     exit(0)
 
     '''Train the model'''
 
@@ -110,7 +119,8 @@ def main():  # noqa: D103
             q_network = create_model(args.look_back_steps, args.map_shape, args.num_actions)
             dqn_agent = DQNAgent(q_network=q_network, memory=memory, policy=policy, gamma=args.gamma, 
                                 target_update_freq=args.target_update_freq, num_burn_in=args.num_burn_in, 
-                                train_freq=args.train_freq, batch_size=args.batch_size)
+                                train_freq=args.train_freq, batch_size=args.batch_size, train_interv=args.train_interv,
+                                log_dir=args.log_dir)
             print( "defined dqn agent")
 
             optimizer = Adam(learning_rate=args.alpha)
@@ -122,10 +132,14 @@ def main():  # noqa: D103
             env.reset()
 
             print ("in fit")
-            if os.path.exists(args.output):
-                shutil.rmtree(args.output)
-            os.mkdir(args.output)
+
+            eval_driver_sim = Drivers()
+            eval_env = Environment(driver_sim=eval_driver_sim)
+            eval_memory = ReplayMemory(args.buffer_size, args.look_back_steps)
+            eval_policy = LinearDecayGreedyEpsilonPolicy(start_value=1, end_value=0.1, 
+                                            num_steps=1000000, num_actions=args.num_actions)
             dqn_agent.fit(env=env, num_iterations=args.num_iterations,
+                          eval_env=eval_env, eval_policy=eval_policy, eval_memory=eval_memory,
                           output_dir=os.path.join(args.output),
                           max_episode_length=args.max_episode_length)
 
