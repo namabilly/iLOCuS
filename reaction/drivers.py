@@ -43,25 +43,23 @@ class Drivers:
         return x >= 0 and x < self.LAT_GRID and y >= 0 and y < self.LNG_GRID
 
     def load_requests(self):
-        # TODO: unmatched requests prosponed?
-        return self.requests[self.time_idx]
-        # generated = [[[] for i in range(self.LAT_GRID)] for j in range(self.LNG_GRID)]
-        # for i in range(self.LAT_GRID):
-        #     for j in range(self.LNG_GRID):
-        #         for k in range(random.randrange(5)): # number of requests in a grid
-        #             start = (random.randrange(self.LAT_GRID), random.randrange(self.LNG_GRID))
-        #             request = [start]
-        #             for l in range(random.randrange(10)): # length of trip
-        #                 lst = request[-1]
-        #                 mov = self.MOVE[random.randrange(4)]
-        #                 nxt = (lst[0] + mov[0], lst[1] + mov[1])
-        #                 if self.inside(nxt[0], nxt[1]):
-        #                     request.append(nxt)
-        #                 else:
-        #                     request.append(lst)
-        #             generated[i][j].append(request)
-        # return generated
-
+        # randomly generated requests for testing
+        generated = [[[] for i in range(self.LAT_GRID)] for j in range(self.LNG_GRID)]
+        for i in range(self.LAT_GRID):
+            for j in range(self.LNG_GRID):
+                for k in range(random.randrange(5)): # number of requests in a grid
+                    start = (random.randrange(self.LAT_GRID), random.randrange(self.LNG_GRID))
+                    request = [start]
+                    for l in range(random.randrange(10)): # length of trip
+                        lst = request[-1]
+                        mov = self.MOVE[random.randrange(4)]
+                        nxt = (lst[0] + mov[0], lst[1] + mov[1])
+                        if self.inside(nxt[0], nxt[1]):
+                            request.append(nxt)
+                        else:
+                            request.append(lst)
+                    generated[i][j].append(request)
+        return generated
 
     def state(self):
         taxi_count = np.zeros((self.LAT_GRID, self.LNG_GRID))
@@ -92,28 +90,37 @@ class Drivers:
                 taxis[driver.grid_x][driver.grid_y].append(driver)
 
         # lottery pick to match requests & drivers
-        requests = self.load_requests()
         for i in range(self.LAT_GRID):
             for j in range(self.LNG_GRID):
-                if len(requests[i][j]) > 0 and len(taxis[i][j]) > 0:
-                    for key, request in requests[i][j].items():
-                        if len(taxis[i][j]) == 0:
-                            break
-                        random.shuffle(taxis[i][j])
-                        driver = taxis[i][j].pop()
-                        driver.itinerary = request
-                        # print(i, j, driver.itinerary)
+                for t in range(max(0, self.time_idx - 5), self.time_idx): 
+                    # requests could be left for 5 timesteps
+                    requests = self.requests[t]
+                    if len(requests[i][j]) > 0 and len(taxis[i][j]) > 0:
+                        for key, request in requests[i][j].items():
+                            if len(taxis[i][j]) == 0:
+                                break
+                            random.shuffle(taxis[i][j])
+                            driver = taxis[i][j].pop()
+                            driver.itinerary = request
+                            # print(i, j, driver.itinerary)
 
         # make a move for all drivers
         for driver in self.drivers:            
             if not driver.itinerary: 
                 # still not occupied: go to the best possible adjacent grids, myopic driver
                 cx, cy = driver.grid_x, driver.grid_y
+                max_bonus = bonus[cx][cy]
+                max_candidates = [(cx, cy)]
                 for i in range(4):
-                    nx, ny = driver.grid_x + self.MOVE[i][0], driver.grid_y + self.MOVE[i][1]
-                    if self.inside(nx, ny) and bonus[nx][ny] > bonus[cx][cy]:
-                        cx, cy = nx, ny
-                driver.grid_x, driver.grid_y = cx, cy
+                    nx, ny = cx + self.MOVE[i][0], cy + self.MOVE[i][1]
+                    if self.inside(nx, ny):
+                        if bonus[nx][ny] > max_bonus:
+                            max_bonus = bonus[nx][ny]
+                            max_candidates = []
+                        if bonus[nx][ny] == max_bonus:
+                            max_candidates.append((nx,ny))
+                
+                driver.grid_x, driver.grid_y = max_candidates[random.randrange(len(max_candidates))]
             else:
                 # currently occupied: go to the next grid in itinerary
                 # for starting rides, driver will stay in the current grid (time cost of take request)
@@ -131,8 +138,8 @@ class Drivers:
 # data = np.load('../dataset/20151101_request.npy')
 # print(len(data))
 # print(data[360])
-drivers = Drivers()
-drivers.reset(9, 1000)
-drivers.step(np.ones((15,15)))
-drivers.step(np.zeros((15,15)))
+# drivers = Drivers()
+# drivers.reset(9, 1000)
+# drivers.step(np.ones((15,15)))
+# drivers.step(np.zeros((15,15)))
 
