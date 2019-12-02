@@ -26,9 +26,9 @@ def main():  # noqa: D103
     parser.add_argument("--num_actions", default=10, type=int, help="level of pricing")
 
     parser.add_argument("--gamma", default=0.8, type=float, help="Discount factor")
-    parser.add_argument("--alpha", default=0.0001, type=float, help="Learning rate")
+    parser.add_argument("--alpha", default=0.001, type=float, help="Learning rate")
     parser.add_argument("--epsilon", default=0.5, type=float, help="Exploration probability for epsilon-greedy")
-    parser.add_argument("--target_update_freq", default=1000, type=int,
+    parser.add_argument("--target_update_freq", default=10000, type=int,
                         help="Frequency for copying weights to target network")
     parser.add_argument("--num_iterations", default=5000000, type=int,
                         help="Number of overal interactions to the environment")
@@ -37,14 +37,14 @@ def main():  # noqa: D103
     parser.add_argument("--max_episode_length", default=400, type=int, help="Terminate earlier for one episode")
     parser.add_argument("--train_freq", default=8, type=int, help="Frequency for training")
     parser.add_argument("--train_interv", default=8, type=int, help="interval for training")
-    parser.add_argument("--num-burn-in", default=100, type=int, help="number of memory before train")
+    parser.add_argument("--num-burn-in", default=1000, type=int, help="number of memory before train")
 
     parser.add_argument("-o", "--output", default="ilocus-v0", type=str, help="Directory to save data to")
     parser.add_argument("--seed", default=0, type=int, help="Random seed")
     parser.add_argument("--train", default=True, type=bool, help="Train/Evaluate, set True if train the model")
     parser.add_argument("--model_path", default="atari-v0", type=str, help="specify model path to evaluation")
     parser.add_argument("--max_grad", default=1.0, type=float, help="Parameter for huber loss")
-    parser.add_argument("--log_dir", default="log", type=str, help="specify log folder to save evaluate result")-
+    parser.add_argument("--log_dir", default="log", type=str, help="specify log folder to save evaluate result")
     parser.add_argument("--eval_num", default=100, type=int, help="number of evaluation to run")
     parser.add_argument("--save_freq", default=100000, type=int, help="model save frequency")
 
