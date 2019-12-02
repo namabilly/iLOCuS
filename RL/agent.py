@@ -138,7 +138,7 @@ class DQNAgent:
             episode_reward = []
             # print("********  0 Begin the training episode: ", episode_counter, ", currently ", Q_update_counter,
             # " step  *******************")
-            prev_state = env.reset()
+            prev_state, _ = env.reset()
             for t in range(1, max_episode_length):
                 # Generate samples according to different policy
                 if self.memory.current_size > self.num_burn_in:
@@ -173,12 +173,11 @@ class DQNAgent:
                     for _ in range(self.train_freq):
                         evalQ_update_counter += 1
                         tmp_value = [evalQ_update_counter, self.update_policy(target_q)]
-                        print('Update {cnt} times, loss {loss}'.format(cnt=tmp_value[0],loss=tmp_value[1]))
                         # print('action', action_map)
                         # evaluate_counter += 1
                         # if evaluate_counter % 20000 == 0:
                         #     # if evaluate_counter % 100 == 0:
-                        #     loss.append(tmp_value)
+                        loss.append(tmp_value)
                             # score.append([Q_update_counter, self.evaluate(env_name, 10, max_episode_length)])
                             # print("1 The average total score for 10 episodes after ", evaluate_counter, " updates is ", score[-1])
                             # print("2 The loss after ", evaluate_counter, " updates is: ", loss[-1])
@@ -186,7 +185,9 @@ class DQNAgent:
                         if evalQ_update_counter % self.target_update_freq == 0:
                             weights = self.q_network.get_weights()
                             target_q.set_weights(weights)
-
+                    if evalQ_update_counter % 100 == 0:
+                        avg_loss = sum(item[1] for item in loss[-100:])/100
+                        print('Update {cnt} times, loss {loss}'.format(cnt=evalQ_update_counter,loss=avg_loss))
                 if is_terminal:
                     break
 

@@ -1,7 +1,6 @@
 import numpy as np
 import random
 import os
-import geopy.distance
 
 class Driver:    
     def __init__(self, x, y):

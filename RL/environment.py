@@ -29,7 +29,7 @@ class Environment(object):
     #          reward: reward for the current pricing table
 
     def step(self, action):
-        new_state, is_terminal = self.driver_sim.react(action)
+        new_state, is_terminal = self.driver_sim.step(action)
         # new_state shape: (4, 15, 15)
         reward = self._compute_reward(new_state[2,:,:], self.objective)
         # print(reward)

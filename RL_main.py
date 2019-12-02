@@ -28,11 +28,11 @@ def main():  # noqa: D103
     parser.add_argument("--gamma", default=0.8, type=float, help="Discount factor")
     parser.add_argument("--alpha", default=0.0001, type=float, help="Learning rate")
     parser.add_argument("--epsilon", default=0.5, type=float, help="Exploration probability for epsilon-greedy")
-    parser.add_argument("--target_update_freq", default=10000, type=int,
+    parser.add_argument("--target_update_freq", default=1000, type=int,
                         help="Frequency for copying weights to target network")
     parser.add_argument("--num_iterations", default=5000000, type=int,
                         help="Number of overal interactions to the environment")
-    parser.add_argument("--max_episode_length", default=1440, type=int, help="Terminate earlier for one episode")
+    parser.add_argument("--max_episode_length", default=1000, type=int, help="Terminate earlier for one episode")
     parser.add_argument("--train_freq", default=8, type=int, help="Frequency for training")
     parser.add_argument("--num-burn-in", default=100, type=int, help="number of memory before train")
 
