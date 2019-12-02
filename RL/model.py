@@ -6,11 +6,11 @@ from keras.layers import (Activation, Convolution2D, Dense, Flatten, Input, Drop
 
 def create_model(look_back_steps, input_shape, num_actions, model_name='q_network'):
     with tf.name_scope(model_name):
-        input_img = Input(shape = (look_back_steps + 5,) + input_shape) 
+        input_img = Input(shape = (look_back_steps + 4,) + input_shape) 
         # Input shape = (batch, look_back_steps + 5, 84, 84)
 
         embeddings = []
-        for i in range(look_back_steps + 5):
+        for i in range(look_back_steps + 4):
             ch_i = Lambda(lambda x: x[:,i,:,:])(input_img)
             embeddings.append(embedding(ch_i, input_shape, 128, 'embed_'+str(i)))
         

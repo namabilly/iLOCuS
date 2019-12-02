@@ -111,9 +111,9 @@ class ReplayMemory:
 
     def stacked_retrieve(self, sample_index, location):
         # m, d, n, n0, location, p0-pt
-        stacked_state = np.zeros((5 + self.look_back_steps, 15, 15))
-        stacked_state[0:4,:,:] = self.buffer[sample_index].state
-        stacked_state[4,:,:] = gen_map(location)
+        stacked_state = np.zeros((4 + self.look_back_steps, 15, 15))
+        stacked_state[0:3,:,:] = self.buffer[sample_index].state
+        stacked_state[3,:,:] = gen_map(location)
         timestamp = self.buffer[sample_index].timestamp
         for t in range(min(timestamp, self.look_back_steps)):
             local_index = (sample_index - t) % self.buffer_size

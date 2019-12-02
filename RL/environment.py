@@ -2,7 +2,6 @@ import json
 import os
 import random
 import numpy as np
-from driver_func_test import DriverSim
 
 class Environment(object):
     def __init__(self,
@@ -31,7 +30,7 @@ class Environment(object):
     def step(self, action):
         new_state, is_terminal = self.driver_sim.step(action)
         # new_state shape: (4, 15, 15)
-        reward = self._compute_reward(new_state[2,:,:], self.objective)
+        reward = self._compute_reward(new_state[1,:,:], self.objective)
         # print(reward)
         return np.copy(new_state), reward, is_terminal
 

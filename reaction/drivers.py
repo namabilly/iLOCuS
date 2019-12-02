@@ -71,10 +71,10 @@ class Drivers:
             if not driver.itinerary: 
                 empty_count[driver.grid_x][driver.grid_y] += 1
                 
-        ret = np.zeros((4, self.LAT_GRID, self.LNG_GRID))
+        ret = np.zeros((3, self.LAT_GRID, self.LNG_GRID))
         ret[0,:,:] = request_count
-        ret[2,:,:] = taxi_count
-        ret[3,:,:] = empty_count
+        ret[1,:,:] = taxi_count
+        ret[2,:,:] = empty_count
         return ret, False
 
     

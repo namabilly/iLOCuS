@@ -4,8 +4,6 @@ import keras
 from keras.models import Model
 from keras.optimizers import Adam
 
-from objectives import mean_huber_loss
-
 import numpy as np
 import pickle
 import gc
@@ -111,7 +109,7 @@ class DQNAgent:
         train_loss = self.q_network.train_on_batch(x, y)
         return train_loss
 
-    def fit(self, env, eval_env, eval_memory, eval_policy, output_dir, num_iterations, max_episode_length):
+    def fit(self, env, eval_env, eval_memory, eval_policy, output_dir, num_iterations, max_episode_length, save_interval):
         """Fit your model to the provided environment.
         Its a good idea to print out things like loss, average reward,
         Q-values, etc to see if your agent is actually improving.
@@ -165,15 +163,6 @@ class DQNAgent:
                 # append other infor to replay memory (action, reward, t, is_terminal)
                 self.memory.append(prev_state, action_map, reward, t, is_terminal)
 
-                # Save the trained Q-net at 5 check points
-                Q_update_counter += 1
-                if Q_update_counter % (num_iterations // 5) == 0:
-                    cp_name = Q_update_counter // (num_iterations // 5)
-                    self.q_network.save(output_dir + '/qnet-{cp}.h5'.format(cp=cp_name))
-                    # Save the episode_len, loss, score into files
-                    pickle.dump(loss, open(output_dir + "/loss-{cp}.p".format(cp=cp_name), "wb"))
-                    pickle.dump(score, open(output_dir + "/score-{cp}.p".format(cp=cp_name), "wb"))
-
                 # Update the Q net using minibatch from replay memory and update the target Q net
                 if self.memory.current_size > self.num_burn_in and (t + 1) % self.train_interv == 0:
                     # Update the Q network every self.train_freq steps
@@ -191,6 +180,10 @@ class DQNAgent:
                         if evalQ_update_counter % self.target_update_freq == 0:
                             weights = self.q_network.get_weights()
                             target_q.set_weights(weights)
+                    
+                    if evalQ_update_counter % save_interval == 0:
+                        self.q_network.save(output_dir + '/qnet.h5')
+
                     if evalQ_update_counter % PRINT_INTERV == 0:
                         avg_loss = sum(item[1] for item in episode_loss[-PRINT_INTERV:])/PRINT_INTERV
                         print('Update {cnt} times, loss {loss}'.format(cnt=evalQ_update_counter,loss=avg_loss))
@@ -201,11 +194,11 @@ class DQNAgent:
                 prev_state = next_state
             
             # evaluate
-            mean_reward = self.evaluate(eval_env, eval_memory, eval_policy, 10, 50)
+            mean_reward = self.evaluate(str(evalQ_update_counter), eval_env, eval_memory, eval_policy, 10, 50)
             self.reward_log.write(str(mean_reward) + '\n')
             print('*********** episode {cnt} : average reward {rwd}'.format(cnt=episode_counter, rwd=mean_reward))
 
-    def evaluate(self, eval_env, eval_memory, eval_policy, num_episodes, max_episode_length=None):
+    def evaluate(self, env_name, eval_env, eval_memory, eval_policy, num_episodes, max_episode_length=None):
         """Test your agent with a provided environment.
         
         You shouldn't update your network parameters here. Also if you
@@ -218,11 +211,13 @@ class DQNAgent:
         """
         print(' ********** Evaluating')
         mean_reward = 0
-        prev_state, _ = eval_env.reset()
-        episode_reward = []
+        mean_cost = 0
+
+        pricing_fp = open('log/pricing_'+env_name+'.txt','w')
         for _ in range(num_episodes):
             total_reward = 0
             eval_memory.clear()
+            prev_state, _ = eval_env.reset()
             for t in range(1, max_episode_length+1):
                 if t > 1:
                     # Generate samples according to different policy
@@ -233,12 +228,18 @@ class DQNAgent:
                     _action = np.random.randint(self.policy.num_actions, size=(225, 1))
 
                 action_map = np.reshape(_action, (15, 15))
+                mean_cost += np.sum(action_map)
                 # Take 1 action
                 next_state, reward, is_terminal = eval_env.step(action_map)
+                
+                pricing_fp.write('state\n'+np.array2string(prev_state)+'\n')
+                pricing_fp.write('price\n'+np.array2string(action_map)+'\n')
 
                 total_reward += reward
                 eval_memory.append(prev_state, action_map, reward, t, is_terminal)
                 prev_state = next_state
             
             mean_reward += total_reward
-        return mean_reward / num_episodes
+        pricing_fp.close()
+        print('********* average cost',mean_cost/num_episodes/max_episode_length)
+        return mean_reward / num_episodes / max_episode_length
