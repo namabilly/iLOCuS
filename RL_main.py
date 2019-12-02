@@ -9,13 +9,13 @@ import shutil
 import tensorflow as tf
 import numpy as np
 
-from environment import Environment
-from policy import LinearDecayGreedyEpsilonPolicy
-from agent import DQNAgent
-from core import ReplayMemory
-from driver_func_test import DriverSim
-from model import create_model
-from objectives import mean_huber_loss
+from RL.environment import Environment
+from RL.policy import LinearDecayGreedyEpsilonPolicy
+from RL.agent import DQNAgent
+from RL.core import ReplayMemory
+from Reaction.drivers import Drivers
+from RL.model import create_model
+from RL.objectives import mean_huber_loss
 from keras.optimizers import Adam, SGD
 
 def main():  # noqa: D103
@@ -32,9 +32,9 @@ def main():  # noqa: D103
                         help="Frequency for copying weights to target network")
     parser.add_argument("--num_iterations", default=5000000, type=int,
                         help="Number of overal interactions to the environment")
-    parser.add_argument("--max_episode_length", default=200000, type=int, help="Terminate earlier for one episode")
-    parser.add_argument("--train_freq", default=4, type=int, help="Frequency for training")
-    parser.add_argument("--num-burn-in", default=10000, type=int, help="number of memory before train")
+    parser.add_argument("--max_episode_length", default=1440, type=int, help="Terminate earlier for one episode")
+    parser.add_argument("--train_freq", default=8, type=int, help="Frequency for training")
+    parser.add_argument("--num-burn-in", default=100, type=int, help="number of memory before train")
 
     parser.add_argument("-o", "--output", default="ilocus-v0", type=str, help="Directory to save data to")
     parser.add_argument("--seed", default=0, type=int, help="Random seed")
@@ -48,7 +48,7 @@ def main():  # noqa: D103
     parser.add_argument("--save_freq", default=100000, type=int, help="model save frequency")
 
     # memory related args
-    parser.add_argument("--buffer_size", default=100000, type=int, help="reply memory buffer size")
+    parser.add_argument("--buffer_size", default=1000, type=int, help="reply memory buffer size")
     parser.add_argument("--look_back_steps", default=4, type=int, help="how many previous pricing tables will be fed into RL")
     
     args = parser.parse_args()
@@ -83,7 +83,7 @@ def main():  # noqa: D103
             # q_network_online.load_weights(model_dir + ".h5")
             # q_network_target.load_weights(model_dir + ".h5")
 
-            driver_sim = DriverSim()
+            driver_sim = Drivers()
             env = Environment(driver_sim=driver_sim)
 
             memory = ReplayMemory(args.buffer_size, args.look_back_steps)
@@ -99,7 +99,7 @@ def main():  # noqa: D103
         with tf.device('/cpu:0'):
             print("created model")
 
-            driver_sim = DriverSim()
+            driver_sim = Drivers()
             env = Environment(driver_sim=driver_sim)
             print("set up environment")
 
