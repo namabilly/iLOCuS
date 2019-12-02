@@ -25,7 +25,7 @@ class Drivers:
         self.drivers = []
         self.requests = {}
 
-    def reset(self, time = 9, count = 1000, date = "20151101"):
+    def reset(self, time = 0, count = 1000, date = "20151101"):
         random.seed(None)
         self.time_idx = time * 30
         self.drivers = []
@@ -109,18 +109,19 @@ class Drivers:
             if not driver.itinerary: 
                 # still not occupied: go to the best possible adjacent grids, myopic driver
                 cx, cy = driver.grid_x, driver.grid_y
-                max_bonus = bonus[cx][cy]
-                max_candidates = [(cx, cy)]
+                candidates = [(cx, cy)]
+                weights = [bonus[cx][cy]]
+                # weighted sample so that not all taxis goes in the same direction
                 for i in range(4):
                     nx, ny = cx + self.MOVE[i][0], cy + self.MOVE[i][1]
                     if self.inside(nx, ny):
-                        if bonus[nx][ny] > max_bonus:
-                            max_bonus = bonus[nx][ny]
-                            max_candidates = []
-                        if bonus[nx][ny] == max_bonus:
-                            max_candidates.append((nx,ny))
-                
-                driver.grid_x, driver.grid_y = max_candidates[random.randrange(len(max_candidates))]
+                        weights.append(bonus[nx][ny])
+                        candidates.append((nx,ny))
+
+                total = sum(weights)
+                weights = list(map(lambda x: x / total, weights))
+                dest = random.choices(population = candidates, weights = weights)[0]
+                driver.grid_x, driver.grid_y = dest
             else:
                 # currently occupied: go to the next grid in itinerary
                 # for starting rides, driver will stay in the current grid (time cost of take request)
@@ -139,7 +140,7 @@ class Drivers:
 # print(len(data))
 # print(data[360])
 # drivers = Drivers()
-# drivers.reset(9, 1000)
+# drivers.reset(8, 1000)
 # drivers.step(np.ones((15,15)))
 # drivers.step(np.zeros((15,15)))
 
