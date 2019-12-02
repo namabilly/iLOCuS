@@ -13,7 +13,7 @@ from RL.environment import Environment
 from RL.policy import LinearDecayGreedyEpsilonPolicy
 from RL.agent import DQNAgent
 from RL.core import ReplayMemory
-from Reaction.drivers import Drivers
+from reaction.drivers import Drivers
 from RL.model import create_model
 from RL.objectives import mean_huber_loss
 from keras.optimizers import Adam, SGD
