@@ -2,17 +2,23 @@ import json
 import os
 import random
 import numpy as np
+from driver_func_test import DriverSim
 
 class Environment(object):
     def __init__(self,
-                 sess,
-                 model,
-                 objective
-                 beta=0.5):
-        self.sess = sess
-        self.beta = beta
-        self.model = model
-        self.objective = objective
+                driver_sim,
+                env_size=(15, 15),
+                objective=None):
+        self.env_size = env_size
+        if not objective:
+            self.objective = np.ones((15,15))
+        else:
+            self.objective = objective
+        self.objective /= np.sum(self.objective)
+        self.driver_sim = driver_sim
+
+    def reset(self):
+        return self.driver_sim.reset()
 
     '''
     Main function step
@@ -23,20 +29,22 @@ class Environment(object):
     #          reward: reward for the current pricing table
 
     def step(self, action):
-        new_state = driver_react(self.state, action)
-        reward = self._compute_reward(new_state, self.objective)
-        self.state = new_state
-        feed_dict_dqn = {
-            self.model.inputs_ent: new_state,
-        }
-
-        return feed_dict_dqn, reward
+        new_state, is_terminal = self.driver_sim.react(action)
+        # new_state shape: (4, 15, 15)
+        reward = self._compute_reward(new_state[2,:,:], self.objective)
+        # print(reward)
+        return np.copy(new_state), reward, is_terminal
 
     '''
     Calculate reward
     '''
     # compute the reward given the current distribution of taxis and desired distribution.
     def _compute_reward(self, state, objective):
+        state = np.copy(state)
+
+        # normalize
+        state /= np.sum(state)
+
         # KL divergence
-        return np.sum(np.where(state != 0, state * np.log(state / objective), 0))
+        return -np.sum(np.where(state != 0, state * np.log(state / objective), 0))
         
