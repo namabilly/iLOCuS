@@ -194,9 +194,10 @@ class DQNAgent:
                 prev_state = next_state
             
             # evaluate
-            mean_reward = self.evaluate(str(evalQ_update_counter), eval_env, eval_memory, eval_policy, 10, 50)
-            self.reward_log.write(str(mean_reward) + '\n')
-            print('*********** episode {cnt} : average reward {rwd}'.format(cnt=episode_counter, rwd=mean_reward))
+            if (episode_counter + 1) % 5 == 0:
+                mean_reward = self.evaluate(str(episode_counter), eval_env, eval_memory, eval_policy, 10, 50)
+                self.reward_log.write(str(mean_reward) + '\n')
+                print(' ********** episode {cnt} : average reward {rwd}'.format(cnt=episode_counter, rwd=mean_reward))
 
     def evaluate(self, env_name, eval_env, eval_memory, eval_policy, num_episodes, max_episode_length=None):
         """Test your agent with a provided environment.
@@ -241,5 +242,5 @@ class DQNAgent:
             
             mean_reward += total_reward
         pricing_fp.close()
-        print('********* average cost',mean_cost/num_episodes/max_episode_length)
+        print(' ********** average cost',mean_cost/num_episodes/max_episode_length)
         return mean_reward / num_episodes / max_episode_length

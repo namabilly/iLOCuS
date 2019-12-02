@@ -49,7 +49,7 @@ def main():  # noqa: D103
     parser.add_argument("--save_freq", default=100000, type=int, help="model save frequency")
 
     # memory related args
-    parser.add_argument("--buffer_size", default=10000, type=int, help="reply memory buffer size")
+    parser.add_argument("--buffer_size", default=40000, type=int, help="reply memory buffer size")
     parser.add_argument("--look_back_steps", default=1, type=int, help="how many previous pricing tables will be fed into RL")
     
     args = parser.parse_args()

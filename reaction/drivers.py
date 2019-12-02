@@ -117,9 +117,9 @@ class Drivers:
                     if self.inside(nx, ny):
                         weights.append(bonus[nx][ny])
                         candidates.append((nx,ny))
-
+                weights = [x + 1e-8 for x in weights]
                 total = sum(weights)
-                weights = list(map(lambda x: x / total, weights))
+                weights = [x / total for x in weights]
                 dest = random.choices(population = candidates, weights = weights)[0]
                 driver.grid_x, driver.grid_y = dest
             else:

@@ -1,5 +1,5 @@
 
-from Reaction.drivers import Drivers
+from reaction.drivers import Drivers
 from RL.environment import Environment
 import numpy as np
 
@@ -9,7 +9,7 @@ if __name__ == '__main__':
     env.reset()
     num_episodes = 10
     max_episode_length = 50
-    num_actions = 4
+    num_actions = 10
     mean_reward = 0
     for _ in range(num_episodes):
         total_reward = 0
