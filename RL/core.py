@@ -121,8 +121,7 @@ class ReplayMemory:
         
         return stacked_state
 
-    # def clear(self):
-    #     self.buffer = [0 for i in range(self.buffer_size)]
-    #     self.other_buffer = [0 for i in range(self.buffer_size)]
-    #     self.index = 0
-    #     self.current_size = 0
+    def clear(self):
+        self.current_size = 0
+        self.buffer = [None for _ in range(self.buffer_size)]
+        self.index = -1 # track the index where the next sample should be stored
