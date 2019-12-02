@@ -35,9 +35,10 @@ class Drivers:
             # TODO: initial position needed
             self.drivers.append(Driver(random.randrange(self.LAT_GRID), random.randrange(self.LNG_GRID)))
         
-        dir_path = os.path.join(os.path.dirname(__file__), "../matrices_10min")
-        req_path = os.path.join(dir_path, date + "_request.npy")
-        self.ride_requests = np.load(req_path)
+        # dir_path = os.path.join(os.path.dirname(__file__), "../matrices_10min")
+        # req_path = os.path.join(dir_path, date + "_request.npy")
+        # self.ride_requests = np.load(req_path)
+        return self.state()
 
     def inside(self, x, y):
         return x >= 0 and x < self.LAT_GRID and y >= 0 and y < self.LNG_GRID
@@ -60,6 +61,25 @@ class Drivers:
                             request.append(lst)
                     generated[i][j].append(request)
         return generated
+
+
+    def state(self, requests = None):
+        taxi_count = np.zeros((self.LAT_GRID, self.LNG_GRID))
+        empty_count = np.zeros((self.LAT_GRID, self.LNG_GRID))
+        request_count = np.zeros((self.LAT_GRID, self.LNG_GRID))
+        for driver in self.drivers:                   
+            taxi_count[driver.grid_x][driver.grid_y] += 1
+            if requests is not None:
+                request_count[driver.grid_x][driver.grid_y] = len(requests[driver.grid_x][driver.grid_y])
+            if not driver.itinerary: 
+                # not occupied (add for lottery)
+                empty_count[driver.grid_x][driver.grid_y] += 1
+                
+        ret = np.zeros((4, self.LAT_GRID, self.LNG_GRID))
+        ret[0,:,:] = request_count
+        ret[2,:,:] = taxi_count
+        ret[3,:,:] = empty_count
+        return ret, False
 
     
     def step(self, bonus):
@@ -84,7 +104,7 @@ class Drivers:
                         random.shuffle(taxis[i][j])
                         driver = taxis[i][j].pop()
                         driver.itinerary = request
-                        print(i, j, driver.itinerary)
+                        # print(i, j, driver.itinerary)
 
         # make a move for all drivers
         for driver in self.drivers:            
@@ -104,36 +124,12 @@ class Drivers:
                 driver.grid_x, driver.grid_y = next_grid[0], next_grid[1]
 
         # compute new state for output
-        taxi_count = np.zeros((self.LAT_GRID, self.LNG_GRID))
-        empty_count = np.zeros((self.LAT_GRID, self.LNG_GRID))
-        request_count = np.zeros((self.LAT_GRID, self.LNG_GRID))
-        for driver in self.drivers:                   
-            taxi_count[driver.grid_x][driver.grid_y] += 1
-            request_count[driver.grid_x][driver.grid_y] = len(requests[driver.grid_x][driver.grid_y])
-            if not driver.itinerary: 
-                # not occupied (add for lottery)
-                empty_count[driver.grid_x][driver.grid_y] += 1
-                
-        # print(taxi_count)
-        # print(np.sum(taxi_count))
-        # print(empty_count)
-        # print(np.sum(empty_count))
-        # print(request_count)
-        # print(np.sum(request_count))
-        ret = np.array((4,15,15))
-        ret[0,:,:] = request_count
-        ret[2,:,:] = taxi_count
-        ret[3,:,:] = empty_count
-        return ret, False
+        return self.state(requests)
                         
 
     
 
 # test its functionality
-# src = (39.92241, 116.35721)
-# dest = (39.83876,116.35905)
-# print(func_reaction(0, src, dest))
-
 # [720 * [15 * 15]]
 # data = np.load('../dataset/20151101_request.npy')
 # for i in data:
@@ -145,4 +141,5 @@ class Drivers:
 drivers = Drivers()
 drivers.reset(1, 2000)
 #drivers.load_requests(1212)
-drivers.fleet_reaction(np.ones((15,15)))
+drivers.step(np.ones((15,15)))
+drivers.step(np.zeros((15,15)))
