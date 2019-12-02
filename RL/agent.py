@@ -127,7 +127,7 @@ class DQNAgent:
         score = []
         Q_update_counter = 0
         targetQ_update_counter = 0
-        evaluate_counter = 0
+        evalQ_update_counter = 0
         episode_counter = 0
         while True:
             if Q_update_counter > num_iterations:
@@ -151,6 +151,8 @@ class DQNAgent:
                 action_map = np.reshape(_action, (15, 15))
                 # Take 1 action
                 next_state, reward, is_terminal = env.step(action_map)
+                if t == max_episode_length - 1:
+                  is_terminal = True
                 episode_reward.append(reward)
 
                 # append other infor to replay memory (action, reward, t, is_terminal)
@@ -168,21 +170,20 @@ class DQNAgent:
                 # Update the Q net using minibatch from replay memory and update the target Q net
                 if self.memory.current_size > self.num_burn_in:
                     # Update the Q network every self.train_freq steps
-                    if Q_update_counter % self.train_freq == 0:
-                        tmp_value = [Q_update_counter, self.update_policy(target_q)]
+                    for _ in range(self.train_freq):
+                        evalQ_update_counter += 1
+                        tmp_value = [evalQ_update_counter, self.update_policy(target_q)]
                         print('Update {cnt} times, loss {loss}'.format(cnt=tmp_value[0],loss=tmp_value[1]))
                         # print('action', action_map)
-                        evaluate_counter += 1
-                        if evaluate_counter % 20000 == 0:
-                            # if evaluate_counter % 100 == 0:
-                            loss.append(tmp_value)
+                        # evaluate_counter += 1
+                        # if evaluate_counter % 20000 == 0:
+                        #     # if evaluate_counter % 100 == 0:
+                        #     loss.append(tmp_value)
                             # score.append([Q_update_counter, self.evaluate(env_name, 10, max_episode_length)])
                             # print("1 The average total score for 10 episodes after ", evaluate_counter, " updates is ", score[-1])
                             # print("2 The loss after ", evaluate_counter, " updates is: ", loss[-1])
                         # Update the target Q network every self.target_update_freq steps
-                        targetQ_update_counter += 1
-                        if targetQ_update_counter == self.target_update_freq:
-                            targetQ_update_counter = 0
+                        if evalQ_update_counter % self.target_update_freq == 0:
                             weights = self.q_network.get_weights()
                             target_q.set_weights(weights)
 

@@ -27,7 +27,7 @@ class Drivers:
         self.time_idx = 0
         self.drivers = []
 
-    def reset(self, time, count = 2000, date = "20151101"):
+    def reset(self, time = 9, count = 2000, date = "20151101"):
         random.seed(None)
         self.time_idx = time * 30
         self.drivers = []
@@ -62,7 +62,7 @@ class Drivers:
         return generated
 
     
-    def fleet_reaction(self, bonus):
+    def step(self, bonus):
         # advance time
         self.time_idx += 1
         # count taxis in grids to assign requests
@@ -120,7 +120,11 @@ class Drivers:
         # print(np.sum(empty_count))
         # print(request_count)
         # print(np.sum(request_count))
-        return (taxi_count, empty_count, request_count)
+        ret = np.array((4,15,15))
+        ret[0,:,:] = request_count
+        ret[2,:,:] = taxi_count
+        ret[3,:,:] = empty_count
+        return ret, False
                         
 
     

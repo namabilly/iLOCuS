@@ -4,4 +4,7 @@ class DriverSim:
         pass
 
     def react(self, pricing):
-        return np.random.rand((15,15)), False
+        return np.random.rand(4,15,15), False
+    
+    def reset(self):
+        return np.random.rand(4,15,15)
