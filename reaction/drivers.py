@@ -25,18 +25,35 @@ class Drivers:
         self.drivers = []
         self.requests = {}
 
-    def reset(self, time = 0, count = 1000, date = "20151101"):
+    def reset(self, time = 8, count = 1000, date = "20151101"):
         random.seed(None)
         self.time_idx = time * 30
         self.drivers = []
-        for i in range(count):
-            # TODO: initial position needed
-            self.drivers.append(Driver(random.randrange(self.LAT_GRID), random.randrange(self.LNG_GRID)))
 
         dir_path = os.path.join(os.path.dirname(__file__), "../requests_2min")
         req_path = os.path.join(dir_path, date + "_request_list.pickle")
         with open(req_path, 'rb') as f:
             self.requests = pickle.load(f)
+
+        # TODO: initial position needed
+        # for i in range(count):
+        #     self.drivers.append(Driver(random.randrange(self.LAT_GRID), random.randrange(self.LNG_GRID)))
+        # Now: use request distribution as taxi distribution
+        sample_requests = [[0 for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
+        total_requests = 0
+
+        for i in range(self.LAT_GRID):
+            for j in range(self.LNG_GRID):
+                for k in range(8 * 30, 12 * 30):
+                    sample_requests[i][j] += len(self.requests[k][i][j])
+                    total_requests += len(self.requests[k][i][j])
+
+        distribution = [[sample_requests[i][j] / total_requests for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
+        taxi_count = [[round(count * distribution[i][j]) for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
+        for i in range(self.LAT_GRID):
+            for j in range(self.LNG_GRID):
+                for k in range(taxi_count[i][j]):
+                    self.drivers.append(Driver(i, j))
         return self.state()
 
     def inside(self, x, y):
@@ -44,7 +61,7 @@ class Drivers:
 
     def load_requests(self):
         # randomly generated requests for testing
-        generated = [[[] for i in range(self.LAT_GRID)] for j in range(self.LNG_GRID)]
+        generated = [[[] for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
         for i in range(self.LAT_GRID):
             for j in range(self.LNG_GRID):
                 for k in range(random.randrange(5)): # number of requests in a grid
@@ -67,9 +84,12 @@ class Drivers:
         request_count = np.zeros((self.LAT_GRID, self.LNG_GRID))
         for driver in self.drivers:                   
             taxi_count[driver.grid_x][driver.grid_y] += 1
-            request_count[driver.grid_x][driver.grid_y] = len(self.requests[self.time_idx][driver.grid_x][driver.grid_y])
             if not driver.itinerary: 
                 empty_count[driver.grid_x][driver.grid_y] += 1
+
+        for i in range(self.LAT_GRID):
+            for j in range(self.LNG_GRID):
+                request_count[i][j] = len(self.requests[self.time_idx][i][j])
                 
         ret = np.zeros((3, self.LAT_GRID, self.LNG_GRID))
         ret[0,:,:] = request_count
@@ -102,7 +122,6 @@ class Drivers:
                             random.shuffle(taxis[i][j])
                             driver = taxis[i][j].pop()
                             driver.itinerary = request
-                            # print(i, j, driver.itinerary)
 
         # make a move for all drivers
         for driver in self.drivers:            

@@ -96,38 +96,38 @@ def main():  # noqa: D103
     '''Train the model'''
 
     with tf.Session() as sess:
-        with tf.device('/cpu:0'):
-            print("created model")
+        # with tf.device('/cpu:0'):
+        print("created model")
 
-            driver_sim = DriverSim()
-            env = Environment(driver_sim=driver_sim)
-            print("set up environment")
+        driver_sim = DriverSim()
+        env = Environment(driver_sim=driver_sim)
+        print("set up environment")
 
-            # # create output dir, meant to pop up error when dir exist to avoid over written
-            # os.mkdir(args.output + "/" + args.network_name)
+        # # create output dir, meant to pop up error when dir exist to avoid over written
+        # os.mkdir(args.output + "/" + args.network_name)
 
-            memory = ReplayMemory(args.buffer_size, args.look_back_steps)
-            q_network = create_model(args.look_back_steps, args.map_shape, args.num_actions)
-            dqn_agent = DQNAgent(q_network=q_network, memory=memory, policy=policy, gamma=args.gamma, 
-                                target_update_freq=args.target_update_freq, num_burn_in=args.num_burn_in, 
-                                train_freq=args.train_freq, batch_size=args.batch_size)
-            print( "defined dqn agent")
+        memory = ReplayMemory(args.buffer_size, args.look_back_steps)
+        q_network = create_model(args.look_back_steps, args.map_shape, args.num_actions)
+        dqn_agent = DQNAgent(q_network=q_network, memory=memory, policy=policy, gamma=args.gamma, 
+                            target_update_freq=args.target_update_freq, num_burn_in=args.num_burn_in, 
+                            train_freq=args.train_freq, batch_size=args.batch_size)
+        print( "defined dqn agent")
 
-            optimizer = Adam(learning_rate=args.alpha)
-            q_network.compile(optimizer, mean_huber_loss)
+        optimizer = Adam(learning_rate=args.alpha)
+        q_network.compile(optimizer, mean_huber_loss)
 
-            sess.run(tf.global_variables_initializer())
+        sess.run(tf.global_variables_initializer())
 
-            print ("initializing environment")
-            env.reset()
+        print ("initializing environment")
+        env.reset()
 
-            print ("in fit")
-            if os.path.exists(args.output):
-                shutil.rmtree(args.output)
-            os.mkdir(args.output)
-            dqn_agent.fit(env=env, num_iterations=args.num_iterations,
-                          output_dir=os.path.join(args.output),
-                          max_episode_length=args.max_episode_length)
+        print ("in fit")
+        if os.path.exists(args.output):
+            shutil.rmtree(args.output)
+        os.mkdir(args.output)
+        dqn_agent.fit(env=env, num_iterations=args.num_iterations,
+                        output_dir=os.path.join(args.output),
+                        max_episode_length=args.max_episode_length)
 
 if __name__ == '__main__':
     main()

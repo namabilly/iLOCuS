@@ -66,7 +66,7 @@ def main():  # noqa: D103
     os.mkdir(args.log_dir)
     # Initiating policy for both tasks (training and evaluating)
     policy = LinearDecayGreedyEpsilonPolicy(start_value=1, end_value=0.1, 
-                                            num_steps=100000, num_actions=args.num_actions)
+                                            num_steps=50000, num_actions=args.num_actions)
 
     if not args.train:
         '''Evaluate the model'''
