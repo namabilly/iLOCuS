@@ -2,6 +2,7 @@ import numpy as np
 import random
 import os
 import pickle
+import math
 
 class Driver:    
     def __init__(self, x, y):
@@ -136,7 +137,7 @@ class Drivers:
                     if self.inside(nx, ny):
                         weights.append(bonus[nx][ny])
                         candidates.append((nx,ny))
-                weights = [x + 1e-8 for x in weights]
+                weights = [math.exp(x) for x in weights]
                 total = sum(weights)
                 weights = [x / total for x in weights]
                 dest = random.choices(population = candidates, weights = weights)[0]

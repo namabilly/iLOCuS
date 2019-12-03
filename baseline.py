@@ -20,6 +20,7 @@ if __name__ == '__main__':
             # print(action_map.shape)
             # Take 1 action
             next_state, reward, is_terminal = env.step(action_map)
+            # print(np.sum(next_state[2,:,:])/np.sum(next_state[1,:,:]))
 
             total_reward += reward
         
