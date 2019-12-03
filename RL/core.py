@@ -72,13 +72,20 @@ class ReplayMemory:
         self.index = -1 # track the index where the next sample should be stored
         self.look_back_steps = look_back_steps
 
-    def append(self, state, action, reward, timestamp, is_terminal):
-        _sample = Sample(state, action, reward, timestamp, is_terminal)
+    def append_state(self, state):
+        _sample = Sample(state, None, 0, -1, True)
         self.index = (self.index + 1) % self.buffer_size
         # Store the frame into replay memory
         self.buffer[self.index] = _sample
         # Update the current_size and the index for next storage
         self.current_size = max(self.current_size, self.index + 1)
+
+    def append_other(self, action, reward, timestamp, is_terminal):
+        # Store the other info into replay memory
+        self.buffer[self.index].action = np.copy(action)
+        self.buffer[self.index].reward = reward
+        self.buffer[self.index].timestamp = timestamp
+        self.buffer[self.index].is_terminal = is_terminal
 
     def sample(self, batch_size):
         # sample a minibatch of index
@@ -115,9 +122,10 @@ class ReplayMemory:
         stacked_state[0:3,:,:] = self.buffer[sample_index].state
         stacked_state[3,:,:] = gen_map(location)
         timestamp = self.buffer[sample_index].timestamp
-        for t in range(min(timestamp, self.look_back_steps)):
+        for t in range(1, min(timestamp, self.look_back_steps) + 1):
             local_index = (sample_index - t) % self.buffer_size
-            stacked_state[- 1 - t] = self.buffer[local_index].action
+            # print(sample_index, timestamp, local_index)
+            stacked_state[- t] = self.buffer[local_index].action
         
         return stacked_state
 

@@ -144,7 +144,8 @@ class DQNAgent:
             # print("********  0 Begin the training episode: ", episode_counter, ", currently ", Q_update_counter,
             # " step  *******************")
             prev_state, _ = env.reset()
-            for t in range(1, max_episode_length + 1):
+            for t in range(max_episode_length):
+                self.memory.append_state(prev_state)
                 # Generate samples according to different policy
                 if self.memory.current_size > self.num_burn_in:
                     fwd_states = self.memory.gen_forward_state()
@@ -161,7 +162,7 @@ class DQNAgent:
                 episode_reward.append(reward)
 
                 # append other infor to replay memory (action, reward, t, is_terminal)
-                self.memory.append(prev_state, action_map, reward, t, is_terminal)
+                self.memory.append_other(action_map, reward, t, is_terminal)
 
                 # Update the Q net using minibatch from replay memory and update the target Q net
                 if self.memory.current_size > self.num_burn_in and (t + 1) % self.train_interv == 0:
@@ -219,14 +220,12 @@ class DQNAgent:
             total_reward = 0
             eval_memory.clear()
             prev_state, _ = eval_env.reset()
-            for t in range(1, max_episode_length+1):
-                if t > 1:
-                    # Generate samples according to different policy
-                    fwd_states = eval_memory.gen_forward_state()
-                    fwd_res = self.calc_q_values(np.asarray(fwd_states), self.q_network)
-                    _action = eval_policy.select_action(fwd_res, False)
-                else:
-                    _action = np.random.randint(self.policy.num_actions, size=(225, 1))
+            for t in range(max_episode_length):
+                eval_memory.append_state(prev_state)
+                # Generate samples according to different policy
+                fwd_states = eval_memory.gen_forward_state()
+                fwd_res = self.calc_q_values(np.asarray(fwd_states), self.q_network)
+                _action = eval_policy.select_action(fwd_res, False)
 
                 action_map = np.reshape(_action, (15, 15))
                 mean_cost += np.sum(action_map)
@@ -237,7 +236,7 @@ class DQNAgent:
                 pricing_fp.write('price\n'+np.array2string(action_map)+'\n')
 
                 total_reward += reward
-                eval_memory.append(prev_state, action_map, reward, t, is_terminal)
+                eval_memory.append_other(action_map, reward, t, is_terminal)
                 prev_state = next_state
             
             mean_reward += total_reward
