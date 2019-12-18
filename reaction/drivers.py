@@ -3,6 +3,7 @@ import random
 import os
 import pickle
 import math
+import copy
 
 class Driver:    
     def __init__(self, x, y):
@@ -24,6 +25,7 @@ class Drivers:
     def __init__(self):
         self.time_idx = 0
         self.drivers = []
+        self.empties = []
         self.requests = {}
 
     def reset(self, time = 8, count = 1000, date = "20151101"):
@@ -83,46 +85,71 @@ class Drivers:
         taxi_count = np.zeros((self.LAT_GRID, self.LNG_GRID))
         empty_count = np.zeros((self.LAT_GRID, self.LNG_GRID))
         request_count = np.zeros((self.LAT_GRID, self.LNG_GRID))
+        occupied_count = 0
         for driver in self.drivers:                   
             taxi_count[driver.grid_x][driver.grid_y] += 1
             if not driver.itinerary: 
                 empty_count[driver.grid_x][driver.grid_y] += 1
+            else:
+                occupied_count += 1
 
         for i in range(self.LAT_GRID):
             for j in range(self.LNG_GRID):
                 request_count[i][j] = len(self.requests[self.time_idx][i][j])
                 
+        print("Time idx: %d, Occupied Rate: %.2f" % (self.time_idx, occupied_count / len(self.drivers)))
         ret = np.zeros((3, self.LAT_GRID, self.LNG_GRID))
         ret[0,:,:] = request_count
         ret[1,:,:] = taxi_count
         ret[2,:,:] = empty_count
         return ret, False
 
+    def get_utility(self, x, y):
+        requests = list(self.requests[self.time_idx][x][y].values())
+        taxis = len(self.empties[x][y])
+        if len(requests) == 0:
+            return 0
+
+        cnt, time = 0, 0
+        for request in requests:
+            cnt += 1
+            time += len(request)
+
+        avg = time / cnt # average request length
+        pro = cnt / taxis if cnt < taxis else 1 # probability of getting a request
+        con = 1 # a constant to control the relative value compared to bonus, or to say an expected earn per unit
+        return avg * pro * con
     
     def step(self, bonus):
         # advance time
         self.time_idx += 1
-        # count taxis in grids to assign requests
-        taxis = [[[] for i in range(self.LAT_GRID)] for j in range(self.LNG_GRID)]
-        # search for empty taxis
+        # count empty taxis in grids to assign requests
+        self.empties = [[[] for i in range(self.LAT_GRID)] for j in range(self.LNG_GRID)]
         for driver in self.drivers:            
             if not driver.itinerary: 
                 # if not occupied: add for lottery
-                taxis[driver.grid_x][driver.grid_y].append(driver)
+                self.empties[driver.grid_x][driver.grid_y].append(driver)
 
         # lottery pick to match requests & drivers
         for i in range(self.LAT_GRID):
             for j in range(self.LNG_GRID):
-                for t in range(max(0, self.time_idx - 5), self.time_idx): 
-                    # requests could be left for 5 timesteps
-                    requests = self.requests[t]
-                    if len(requests[i][j]) > 0 and len(taxis[i][j]) > 0:
-                        for key, request in requests[i][j].items():
-                            if len(taxis[i][j]) == 0:
-                                break
-                            random.shuffle(taxis[i][j])
-                            driver = taxis[i][j].pop()
-                            driver.itinerary = request
+                requests = list(self.requests[self.time_idx][i][j].values())
+                for driver in self.empties[i][j]:
+                    # roll the dice, probability = available requests / tempty taxis
+                    dice = random.randrange(len(self.empties[i][j]))
+                    if dice < len(requests):
+                        driver.itinerary = copy.deepcopy(random.choice(requests))
+                # disable this for now
+                # for t in range(max(0, self.time_idx - 5), self.time_idx):
+                #     # requests could be left for 5 timesteps
+                #     requests = self.requests[t]
+                #     if len(requests[i][j]) > 0 and len(taxis[i][j]) > 0:
+                #         for key, request in requests[i][j].items():
+                #             if len(taxis[i][j]) == 0:
+                #                 break
+                #             random.shuffle(taxis[i][j])
+                #             driver = taxis[i][j].pop()
+                #             driver.itinerary = request
 
         # make a move for all drivers
         for driver in self.drivers:            
@@ -130,17 +157,19 @@ class Drivers:
                 # still not occupied: go to the best possible adjacent grids, myopic driver
                 cx, cy = driver.grid_x, driver.grid_y
                 candidates = [(cx, cy)]
-                weights = [bonus[cx][cy]]
-                # weighted sample so that not all taxis goes in the same direction
+                creward = bonus[cx][cy] + self.get_utility(cx, cy)
+                # TODO: all unoccupied taxis goes in the same direction?
                 for i in range(4):
                     nx, ny = cx + self.MOVE[i][0], cy + self.MOVE[i][1]
                     if self.inside(nx, ny):
-                        weights.append(bonus[nx][ny])
-                        candidates.append((nx,ny))
-                weights = [math.exp(x) for x in weights]
-                total = sum(weights)
-                weights = [x / total for x in weights]
-                dest = random.choices(population = candidates, weights = weights)[0]
+                        reward = bonus[nx][ny] + self.get_utility(nx, ny)
+                        if math.isclose(reward, creward):
+                            candidates.append((nx, ny))
+                        elif reward > creward:
+                            candidates = [(nx, ny)]
+                            creward = reward
+                        
+                dest = random.choice(candidates)
                 driver.grid_x, driver.grid_y = dest
             else:
                 # currently occupied: go to the next grid in itinerary
@@ -161,6 +190,7 @@ class Drivers:
 # print(data[360])
 # drivers = Drivers()
 # drivers.reset(8, 1000)
-# drivers.step(np.ones((15,15)))
+# for i in range(400):
+#     drivers.step(np.ones((15,15)))
 # drivers.step(np.zeros((15,15)))
 
