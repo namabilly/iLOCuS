@@ -11,6 +11,11 @@ class Driver:
         self.grid_y = y
         self.itinerary = []
 
+# the main class for the simulator
+# here's an example of interacting with it
+# drivers = Drivers() # constructor
+# drivers.reset(8, 1000, "20151101")  # start at 8am in 11/01/2015, simulate with 1000 taxis
+# drivers.step(np.ones((15,15))) # call this at each timestep with a bonus matrix
 class Drivers:
     LNG_MIN = 116.3002190000
     LNG_MAX = 116.4802271600
@@ -27,6 +32,8 @@ class Drivers:
         self.drivers = []
         self.empties = []
         self.requests = {}
+        self.empty_10min = []
+        self.request_10min = []
 
     def reset(self, time = 8, count = 1000, date = "20151101"):
         random.seed(None)
@@ -38,20 +45,24 @@ class Drivers:
         with open(req_path, 'rb') as f:
             self.requests = pickle.load(f)
 
-        # TODO: initial position needed
-        # for i in range(count):
-        #     self.drivers.append(Driver(random.randrange(self.LAT_GRID), random.randrange(self.LNG_GRID)))
-        # Now: use request distribution as taxi distribution
-        sample_requests = [[0 for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
-        total_requests = 0
+        # Deprecated: use request distribution as taxi distribution
+        # sample_requests = [[0 for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
+        # total_requests = 0
+        # for i in range(self.LAT_GRID):
+        #     for j in range(self.LNG_GRID):
+        #         for k in range(8 * 30, 12 * 30):
+        #             sample_requests[i][j] += len(self.requests[k][i][j])
+        #             total_requests += len(self.requests[k][i][j])
 
-        for i in range(self.LAT_GRID):
-            for j in range(self.LNG_GRID):
-                for k in range(8 * 30, 12 * 30):
-                    sample_requests[i][j] += len(self.requests[k][i][j])
-                    total_requests += len(self.requests[k][i][j])
+        dir_path = os.path.join(os.path.dirname(__file__), "../matrices_10min/")
+        req_path = os.path.join(dir_path, date + "_request.npy")
+        self.request_10min = np.load(req_path)
+        emp_path = os.path.join(dir_path, date + "_free.npy")
+        self.empty_10min = np.load(emp_path)
+        data = self.empty_10min[self.time_idx // 5]
+        total = data.sum()
+        distribution = [[float(data[i][j] / total) for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
 
-        distribution = [[sample_requests[i][j] / total_requests for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
         taxi_count = [[round(count * distribution[i][j]) for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
         for i in range(self.LAT_GRID):
             for j in range(self.LNG_GRID):
@@ -104,21 +115,16 @@ class Drivers:
         ret[2,:,:] = empty_count
         return ret, False
 
-    def get_utility(self, x, y):
-        requests = list(self.requests[self.time_idx][x][y].values())
-        taxis = len(self.empties[x][y])
-        if len(requests) == 0:
-            return 0
+    def get_utility(self, i, j):
+        req_cnt = self.request_10min[self.time_idx // 5][i][j]
+        emp_cnt = self.empty_10min[self.time_idx // 5][i][j]
+        
+        # avg = time / cnt # average request length
+        probility = req_cnt / emp_cnt if req_cnt < emp_cnt else 1 # probability of getting a request
+        # TODO: choose the right value for this constant
+        constant = 10 # a constant to control the relative value compared to bonus, or to say an expected earn per unit
 
-        cnt, time = 0, 0
-        for request in requests:
-            cnt += 1
-            time += len(request)
-
-        avg = time / cnt # average request length
-        pro = cnt / taxis if cnt < taxis else 1 # probability of getting a request
-        con = 1 # a constant to control the relative value compared to bonus, or to say an expected earn per unit
-        return avg * pro * con
+        return probility * constant
     
     def step(self, bonus):
         # advance time
@@ -134,10 +140,14 @@ class Drivers:
         for i in range(self.LAT_GRID):
             for j in range(self.LNG_GRID):
                 requests = list(self.requests[self.time_idx][i][j].values())
+                req_cnt = self.request_10min[self.time_idx // 5][i][j]
+                emp_cnt = self.empty_10min[self.time_idx // 5][i][j]                
+                if len(requests) == 0 or req_cnt == 0: 
+                    continue
+                # print(req_cnt, emp_cnt, len(requests), len(self.empties[i][j]))
                 for driver in self.empties[i][j]:
-                    # roll the dice, probability = available requests / tempty taxis
-                    dice = random.randrange(len(self.empties[i][j]))
-                    if dice < len(requests):
+                    # roll the dice, probability = available requests / empty taxis, from the original dataset
+                    if emp_cnt == 0 or random.randrange(emp_cnt) < req_cnt:
                         driver.itinerary = copy.deepcopy(random.choice(requests))
                 # disable this for now
                 # for t in range(max(0, self.time_idx - 5), self.time_idx):
@@ -184,13 +194,13 @@ class Drivers:
    
 
 # test its functionality
-# [720 * [15 * 15]]
-# data = np.load('../dataset/20151101_request.npy')
+# data = np.load('./matrices_10min/20151101_free.npy')
 # print(len(data))
-# print(data[360])
-# drivers = Drivers()
-# drivers.reset(8, 1000)
-# for i in range(400):
-#     drivers.step(np.ones((15,15)))
+# print(data[100])
+# print(data[100].sum())
+drivers = Drivers()
+drivers.reset(8, 1000)
+for i in range(400):
+    drivers.step(np.ones((15,15)))
 # drivers.step(np.zeros((15,15)))
 
