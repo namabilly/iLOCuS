@@ -58,23 +58,23 @@ class Drivers:
         with open(req_path, 'rb') as f:
             self.requests = pickle.load(f)
         
-		if generating:
-			for i in range(self.LAT_GRID):
-				for j in range(self.LNG_GRID):
-					self.requests[240][i][j] = {}
-			#pool = [(i, j) for i in range(self.LAT_GRID) for j in range(self.LNG_GRID)]
-			#pool = [val for val in pool for _ in range(5)]
-			for i in range(self.LAT_GRID):
-				for j in range(self.LNG_GRID):
-					for k in range(req_pcell):
-						#random.shuffle(pool)
-						#ex, ey = pool.pop()
-						ex, ey = (random.randrange(15), random.randrange(15))
-						path = self.path_to((i, j), (ex, ey))
-						ind = 0
-						while ind in self.requests[240][i][j]:
-							ind += 1
-						self.requests[240][i][j][ind] = path
+        if generating:
+            for i in range(self.LAT_GRID):
+                for j in range(self.LNG_GRID):
+                    self.requests[240][i][j] = {}
+            #pool = [(i, j) for i in range(self.LAT_GRID) for j in range(self.LNG_GRID)]
+            #pool = [val for val in pool for _ in range(5)]
+            for i in range(self.LAT_GRID):
+                for j in range(self.LNG_GRID):
+                    for k in range(req_pcell):
+                        #random.shuffle(pool)
+                        #ex, ey = pool.pop()
+                        ex, ey = (random.randrange(15), random.randrange(15))
+                        path = self.path_to((i, j), (ex, ey))
+                        ind = 0
+                        while ind in self.requests[240][i][j]:
+                            ind += 1
+                        self.requests[240][i][j][ind] = path
         
         self.dest_count = np.zeros((self.LAT_GRID, self.LNG_GRID))
         start_count = np.zeros((self.LAT_GRID, self.LNG_GRID))
@@ -87,18 +87,18 @@ class Drivers:
                     start_count[x][y] += 1
         print(self.dest_count)
         
-		if save_data:
-			np.save(os.path.join('result', '20151101_' + str(self.time_idx) + '_request_start.npy'), start_count)
-			np.save(os.path.join('result', '20151101_' + str(self.time_idx) + '_request_dest.npy'), self.dest_count)
+        if save_data:
+            np.save(os.path.join('result', '20151101_' + str(self.time_idx) + '_request_start.npy'), start_count)
+            np.save(os.path.join('result', '20151101_' + str(self.time_idx) + '_request_dest.npy'), self.dest_count)
         
-		if save_graph:
-			ax = sns.heatmap(self.dest_count, linewidth=0.5)
-			plt.savefig(os.path.join('plots', '20151101_' + str(self.time_idx) + '_request_dest'))
-			plt.clf()
-			ax = sns.heatmap(start_count, linewidth=0.5)
-			plt.savefig(os.path.join('plots', '20151101_' + str(self.time_idx) + '_' + str(self.counter) + '_request_start'))
-			plt.clf()
-			
+        if save_graph:
+            ax = sns.heatmap(self.dest_count, linewidth=0.5)
+            plt.savefig(os.path.join('plots', '20151101_' + str(self.time_idx) + '_request_dest'))
+            plt.clf()
+            ax = sns.heatmap(start_count, linewidth=0.5)
+            plt.savefig(os.path.join('plots', '20151101_' + str(self.time_idx) + '_' + str(self.counter) + '_request_start'))
+            plt.clf()
+            
         # Deprecated: use request distribution as taxi distribution
         # sample_requests = [[0 for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
         # total_requests = 0
@@ -127,7 +127,7 @@ class Drivers:
     def inside(self, x, y):
         return x >= 0 and x < self.LAT_GRID and y >= 0 and y < self.LNG_GRID
 
-	# Deprecated
+    # Deprecated
     def load_requests(self):
         # randomly generated requests for testing
         generated = [[[] for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
@@ -187,27 +187,27 @@ class Drivers:
         print(taxi_count)
         
         if self.counter % 10 == 0 and self.counter < 210:
-			if save_data:
-				np.save(os.path.join('result', '20151101_' + str(self.time_idx) + '_' + str(self.counter) + '_request_taxi.npy'), taxi_count)        
-			if save_graph:
-				ax = sns.heatmap(taxi_count, linewidth=0.5)
-				plt.show()
-				plt.savefig(os.path.join('plots', '20151101_' + str(self.time_idx) + '_' + str(self.counter) + '_request_taxi'))
-				plt.clf()
+            if save_data:
+                np.save(os.path.join('result', '20151101_' + str(self.time_idx) + '_' + str(self.counter) + '_request_taxi.npy'), taxi_count)        
+            if save_graph:
+                ax = sns.heatmap(taxi_count, linewidth=0.5)
+                plt.show()
+                plt.savefig(os.path.join('plots', '20151101_' + str(self.time_idx) + '_' + str(self.counter) + '_request_taxi'))
+                plt.clf()
         
         ret = np.zeros((3, self.LAT_GRID, self.LNG_GRID))
         ret[0,:,:] = request_count
         ret[1,:,:] = taxi_count
         ret[2,:,:] = empty_count
         
-		divergence = self.KL(taxi_count, self.dest_count)
+        divergence = self.KL(taxi_count, self.dest_count)
         print("divergence is: %.10f" % (divergence))
         self.divs.append(divergence)
         
-		return ret, False
+        return ret, False
 
     def get_utility(self, i, j):
-		# replace with actual req/emp currently, will be historical values afterwards
+        # replace with actual req/emp currently, will be historical values afterwards
         #req_cnt = self.request_10min[self.time_idx // 5][i][j]
         #emp_cnt = self.empty_10min[self.time_idx // 5][i][j]
         req_cnt = len(self.requests[self.time_idx][i][j])
@@ -223,7 +223,7 @@ class Drivers:
         return probility * constant
     
     def softmax(self, arr, bonus):
-		# choose among candidates with softmax
+        # choose among candidates with softmax
         l = len(arr)
         val = [(bonus[a[0]][a[1]] + self.get_utility(a[0], a[1])) for a in arr]
         sum = 0
@@ -332,6 +332,6 @@ for i in range(max_turn):
 # drivers.step(np.zeros((15,15)))
 y = drivers.divs
 if save_graph:
-	plt.plot(y)
-	plt.savefig(os.path.join('plots', 'generative_divergence'))
-	plt.clf()
+    plt.plot(y)
+    plt.savefig(os.path.join('plots', 'generative_divergence'))
+    plt.clf()
