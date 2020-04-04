@@ -100,7 +100,7 @@ class ReplayMemory:
             x.append(self.stacked_retrieve(sample_index, location))
             other_infos.append((self.buffer[sample_index].action[row, col],
                                 self.buffer[sample_index].is_terminal,
-                                self.buffer[sample_index].reward,
+                                self.buffer[sample_index].reward[row, col],
                                 ))
             _next_index = (sample_index + 1) % self.current_size
             # print(_next_index)

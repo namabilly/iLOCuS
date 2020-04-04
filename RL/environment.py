@@ -45,5 +45,5 @@ class Environment(object):
         state /= np.sum(state)
 
         # KL divergence
-        return -np.sum(np.where(state != 0, state * np.log(state / objective), 0))
+        return -(np.where(state != 0, state * np.log(state / objective), 0))
         

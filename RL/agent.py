@@ -186,8 +186,10 @@ class DQNAgent:
                         self.q_network.save(output_dir + '/qnet.h5')
 
                     if evalQ_update_counter % PRINT_INTERV == 0:
-                        avg_loss = sum(item[1] for item in episode_loss[-PRINT_INTERV:])/PRINT_INTERV
+                        avg_loss = sum(item[0] for item in episode_loss[-PRINT_INTERV:])/PRINT_INTERV
                         print('Update {cnt} times, loss {loss}'.format(cnt=evalQ_update_counter,loss=avg_loss))
+                        with open('log/loss', 'a') as log_loss:
+                            log_loss.write(str(avg_loss)+'\n')
 
                 if is_terminal:
                     break
@@ -198,6 +200,8 @@ class DQNAgent:
             if (episode_counter + 1) % 5 == 0:
                 mean_reward = self.evaluate(str(episode_counter), eval_env, eval_memory, eval_policy, 10, 50)
                 self.reward_log.write(str(mean_reward) + '\n')
+                with open('log/reward', 'a') as log_reward:
+                    log_reward.write(str(mean_reward) + '\n')
                 print(' ********** episode {cnt} : average reward {rwd}'.format(cnt=episode_counter, rwd=mean_reward))
 
     def evaluate(self, env_name, eval_env, eval_memory, eval_policy, num_episodes, max_episode_length=None):
@@ -235,7 +239,7 @@ class DQNAgent:
                 pricing_fp.write('state\n'+np.array2string(prev_state)+'\n')
                 pricing_fp.write('price\n'+np.array2string(action_map)+'\n')
 
-                total_reward += reward
+                total_reward += np.sum(reward)
                 eval_memory.append_other(action_map, reward, t, is_terminal)
                 prev_state = next_state
             
