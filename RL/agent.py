@@ -186,7 +186,7 @@ class DQNAgent:
                         self.q_network.save(output_dir + '/qnet.h5')
 
                     if evalQ_update_counter % PRINT_INTERV == 0:
-                        avg_loss = sum(item[0] for item in episode_loss[-PRINT_INTERV:])/PRINT_INTERV
+                        avg_loss = sum(item[1] for item in episode_loss[-PRINT_INTERV:])/PRINT_INTERV
                         print('Update {cnt} times, loss {loss}'.format(cnt=evalQ_update_counter,loss=avg_loss))
                         with open('log/loss', 'a') as log_loss:
                             log_loss.write(str(avg_loss)+'\n')
