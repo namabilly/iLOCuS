@@ -143,6 +143,10 @@ class DQNAgent:
             episode_counter += 1
             episode_reward = []
             episode_loss = []
+            # learning rate decay
+            lr = self.q_network.optimizer.lr
+            if Q_update_counter == 200 or Q_update_counter == 400 or Q_update_counter == 600:
+                self.q_network.optimizer.lr.set_value(lr * 0.1)
             # print("********  0 Begin the training episode: ", episode_counter, ", currently ", Q_update_counter,
             # " step  *******************")
             prev_state, _ = env.reset()

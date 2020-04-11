@@ -17,6 +17,7 @@ from reaction.drivers import Drivers
 from RL.model import create_model
 from RL.objectives import mean_huber_loss
 from keras.optimizers import Adam, SGD
+from keras.callbacks import LearningRateScheduler
 
 def main():  # noqa: D103
     parser = argparse.ArgumentParser(description="Run DQN on iLOCuS")
@@ -128,7 +129,15 @@ def main():  # noqa: D103
                                 log_dir=args.log_dir)
         print( "defined dqn agent")
 
-        optimizer = SGD(lr=args.alpha, decay=0.001) 
+        '''
+        def lrdecay(epoch, lrate):
+            if epoch == 200 or epoch == 400 or epoch == 600:
+                return lrate * 0.1
+            return lrate
+
+        lrs = LearningRateScheduler(lrdecay)
+        '''
+        optimizer = SGD(lr=args.alpha) 
         q_network.compile(optimizer, mean_huber_loss)
 
         sess.run(tf.global_variables_initializer())
