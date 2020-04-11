@@ -3,6 +3,9 @@
 from numpy import random
 import numpy as np
 
+SIZE_R = 5
+SIZE_C = 5
+
 class Sample:
     """Represents a reinforcement learning sample.
     Used to store observed experience from an MDP. Represents a
@@ -19,8 +22,8 @@ class Sample:
         self.is_terminal = is_terminal
 
 def gen_map(action):
-    res_map = np.zeros((15, 15))
-    res_map[action//15, action%15] = 1
+    res_map = np.zeros((SIZE_R, SIZE_C))
+    res_map[action//SIZE_C, action%SIZE_C] = 1
     return res_map
 
 class ReplayMemory:
@@ -89,14 +92,14 @@ class ReplayMemory:
 
     def sample(self, batch_size):
         # sample a minibatch of index
-        indexes = random.choice(self.current_size * 225, batch_size, replace=False)
+        indexes = random.choice(self.current_size * SIZE_R * SIZE_C, batch_size, replace=False)
         x = []
         x_next = []  # For next state
         other_infos = []
         for _index in indexes:
-            sample_index = _index // 225
-            location = _index % 225
-            row, col = location // 15, location % 15
+            sample_index = _index // (SIZE_R * SIZE_C)
+            location = _index % (SIZE_R * SIZE_C)
+            row, col = location // SIZE_C, location % SIZE_C
             x.append(self.stacked_retrieve(sample_index, location))
             other_infos.append((self.buffer[sample_index].action[row, col],
                                 self.buffer[sample_index].is_terminal,
@@ -112,13 +115,13 @@ class ReplayMemory:
         return x, x_next, other_infos
     
     def gen_forward_state(self):
-        forward_states = [self.stacked_retrieve(self.index, i) for i in range(225)]
+        forward_states = [self.stacked_retrieve(self.index, i) for i in range(SIZE_R * SIZE_C)]
         return np.stack(forward_states)
         # forward_states shape: (225, 5 + self.look_back_steps, 15, 15)
 
     def stacked_retrieve(self, sample_index, location):
         # m, d, n, n0, location, p0-pt
-        stacked_state = np.zeros((4 + self.look_back_steps, 15, 15))
+        stacked_state = np.zeros((4 + self.look_back_steps, SIZE_R, SIZE_C))
         stacked_state[0:3,:,:] = self.buffer[sample_index].state
         stacked_state[3,:,:] = gen_map(location)
         timestamp = self.buffer[sample_index].timestamp

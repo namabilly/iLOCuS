@@ -3,14 +3,17 @@ import os
 import random
 import numpy as np
 
+SIZE_R = 5
+SIZE_C = 5
+
 class Environment(object):
     def __init__(self,
                 driver_sim,
-                env_size=(15, 15),
+                env_size=(SIZE_R, SIZE_C),
                 objective=None):
         self.env_size = env_size
         if not objective:
-            self.objective = np.ones((15,15))
+            self.objective = np.ones((SIZE_R, SIZE_C))
         else:
             self.objective = objective
         self.objective /= np.sum(self.objective)

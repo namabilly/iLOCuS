@@ -4,16 +4,16 @@ import os
 import pickle
 import math
 import copy
-import seaborn as sns
+#import seaborn as sns
 import matplotlib.pylab as plt
 import time
 
 max_turn = 400
 save_graph = False
 save_data = False
-generating = True
-req_pcell = 5
-driver_pcell = 20
+generating = True 
+req_pcell = 0
+driver_pcell = 100
 
 class Driver:    
     def __init__(self, x, y):
@@ -29,10 +29,10 @@ class Driver:
 class Drivers:
     LNG_MIN = 116.3002190000
     LNG_MAX = 116.4802271600
-    LNG_GRID = 15
+    LNG_GRID = 5
     LAT_MIN = 39.8493175200
     LAT_MAX = 39.9836824300
-    LAT_GRID = 15
+    LAT_GRID = 5
     LNG_STEP = (LNG_MAX - LNG_MIN) / LNG_GRID
     LAT_STEP = (LAT_MAX - LAT_MIN) / LAT_GRID
     MOVE = [(0, 1), (0, -1), (1, 0), (-1, 0)]
@@ -55,21 +55,23 @@ class Drivers:
 
         dir_path = os.path.join(os.path.dirname(__file__), "../requests_2min")
         req_path = os.path.join(dir_path, date + "_request_list.pickle")
+        # print(pickle.HIGHEST_PROTOCOL)
         with open(req_path, 'rb') as f:
             self.requests = pickle.load(f)
         
         if generating:
+            self.requests[240] = [[{} for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
             for i in range(self.LAT_GRID):
                 for j in range(self.LNG_GRID):
                     self.requests[240][i][j] = {}
-            #pool = [(i, j) for i in range(self.LAT_GRID) for j in range(self.LNG_GRID)]
-            #pool = [val for val in pool for _ in range(5)]
+            pool = [(i, j) for i in range(self.LAT_GRID) for j in range(self.LNG_GRID)]
+            pool = [val for val in pool for _ in range(req_pcell)]
             for i in range(self.LAT_GRID):
                 for j in range(self.LNG_GRID):
                     for k in range(req_pcell):
-                        #random.shuffle(pool)
-                        #ex, ey = pool.pop()
-                        ex, ey = (random.randrange(15), random.randrange(15))
+                        random.shuffle(pool)
+                        ex, ey = pool.pop()
+                        # ex, ey = (random.randrange(15), random.randrange(15))
                         path = self.path_to((i, j), (ex, ey))
                         ind = 0
                         while ind in self.requests[240][i][j]:
@@ -85,7 +87,7 @@ class Drivers:
                     self.dest_count[x][y] += 1
                     x, y = req[key][0]
                     start_count[x][y] += 1
-        print(self.dest_count)
+        # print(self.dest_count)
         
         if save_data:
             np.save(os.path.join('result', '20151101_' + str(self.time_idx) + '_request_start.npy'), start_count)
@@ -118,8 +120,8 @@ class Drivers:
         distribution = [[float(data[i][j] / total) for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
 
         taxi_count = [[round(count * distribution[i][j]) for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
-        for i in range(self.LAT_GRID):
-            for j in range(self.LNG_GRID):
+        for i in range(1):
+            for j in range(1):
                 for k in range(driver_pcell if generating else taxi_count[i][j]): 
                     self.drivers.append(Driver(i, j))
         return self.state()
@@ -183,8 +185,8 @@ class Drivers:
             for j in range(self.LNG_GRID):
                 request_count[i][j] = len(self.requests[self.time_idx][i][j])
                 
-        print("Time idx: %d %d, Occupied Rate: %.2f" % (self.time_idx, self.counter, occupied_count / len(self.drivers)))
-        print(taxi_count)
+        # print("Time idx: %d %d, Occupied Rate: %.2f" % (self.time_idx, self.counter, occupied_count / len(self.drivers)))
+        # print(taxi_count)
         
         if self.counter % 10 == 0 and self.counter < 210:
             if save_data:
@@ -200,9 +202,9 @@ class Drivers:
         ret[1,:,:] = taxi_count
         ret[2,:,:] = empty_count
         
-        divergence = self.KL(taxi_count, self.dest_count)
-        print("divergence is: %.10f" % (divergence))
-        self.divs.append(divergence)
+        # divergence = self.KL(taxi_count, self.dest_count)
+        # print("divergence is: %.10f" % (divergence))
+        # self.divs.append(divergence)
         
         return ret, False
 
@@ -328,7 +330,7 @@ class Drivers:
 drivers = Drivers()
 drivers.reset(8, 1000)
 for i in range(max_turn):
-    drivers.step(np.ones((15,15)))
+    drivers.step(np.ones((5,5)))
 # drivers.step(np.zeros((15,15)))
 y = drivers.divs
 if save_graph:

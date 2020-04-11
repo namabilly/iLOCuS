@@ -9,6 +9,8 @@ import pickle
 import gc
 
 PRINT_INTERV = 100
+SIZE_R = 5
+SIZE_C = 5
 class DQNAgent:
     """Class implementing DQN.
     This is a basic outline of the functions/parameters you will need
@@ -152,9 +154,9 @@ class DQNAgent:
                     fwd_res = self.calc_q_values(np.asarray(fwd_states), self.q_network)
                     _action = self.policy.select_action(fwd_res, True)
                 else:
-                    _action = np.random.randint(self.policy.num_actions, size=(225, 1))
+                    _action = np.random.randint(self.policy.num_actions, size=(SIZE_R * SIZE_C, 1))
 
-                action_map = np.reshape(_action, (15, 15))
+                action_map = np.reshape(_action, (SIZE_R, SIZE_C))
                 # Take 1 action
                 next_state, reward, is_terminal = env.step(action_map)
                 if t == max_episode_length - 1:
@@ -231,7 +233,7 @@ class DQNAgent:
                 fwd_res = self.calc_q_values(np.asarray(fwd_states), self.q_network)
                 _action = eval_policy.select_action(fwd_res, False)
 
-                action_map = np.reshape(_action, (15, 15))
+                action_map = np.reshape(_action, (SIZE_R, SIZE_C))
                 mean_cost += np.sum(action_map)
                 # Take 1 action
                 next_state, reward, is_terminal = eval_env.step(action_map)
