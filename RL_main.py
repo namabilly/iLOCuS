@@ -19,12 +19,6 @@ from RL.objectives import mean_huber_loss
 from keras.optimizers import Adam, SGD
 from keras.callbacks import LearningRateScheduler
 
-from tensorflow.compat.v1 import ConfigProto
-from tensorflow.compat.v1 import InteractiveSession
-
-config = ConfigProto()
-config.gpu_options.allow_growth = True
-session = InteractiveSession(config=config)
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
@@ -71,7 +65,7 @@ def main():  # noqa: D103
     parser.add_argument("--gamma", default=0.8, type=float, help="Discount factor")
     parser.add_argument("--alpha", default=0.1, type=float, help="Learning rate")
     parser.add_argument("--epsilon", default=0.5, type=float, help="Exploration probability for epsilon-greedy")
-    parser.add_argument("--target_update_freq", default=10000, type=int,
+    parser.add_argument("--target_update_freq", default=20, type=int,
                         help="Frequency for copying weights to target network")
     parser.add_argument("--num_iterations", default=1000, type=int,
                         help="Number of overal interactions to the environment")
