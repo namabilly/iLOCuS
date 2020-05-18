@@ -19,7 +19,6 @@ from RL.objectives import mean_huber_loss
 from keras.optimizers import Adam, SGD
 from keras.callbacks import LearningRateScheduler
 
-
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 def get_output_folder(parent_dir, env_name):
@@ -63,7 +62,7 @@ def main():  # noqa: D103
     parser.add_argument("--num_actions", default=10, type=int, help="level of pricing")
 
     parser.add_argument("--gamma", default=0.8, type=float, help="Discount factor")
-    parser.add_argument("--alpha", default=0.1, type=float, help="Learning rate")
+    parser.add_argument("--alpha", default=1e-2, type=float, help="Learning rate")
     parser.add_argument("--epsilon", default=0.5, type=float, help="Exploration probability for epsilon-greedy")
     parser.add_argument("--target_update_freq", default=20, type=int,
                         help="Frequency for copying weights to target network")
@@ -116,8 +115,6 @@ def main():  # noqa: D103
 
 
         with tf.Session() as sess:
-            with tf.device('/cpu:0'):
-                print('Evaluationg model')
             # load model
             q_network = create_model(args.look_back_steps, args.map_shape, args.num_actions)
             sess.run(tf.global_variables_initializer())
@@ -158,6 +155,9 @@ def main():  # noqa: D103
 
         memory = ReplayMemory(args.buffer_size, args.look_back_steps)
         q_network = create_model(args.look_back_steps, args.map_shape, args.num_actions)
+        print("@@@@@@@@@@@@@@@@@")
+        for layer in q_network.layers:
+            print(layer.output_shape)
         dqn_agent = DQNAgent(q_network=q_network, memory=memory, policy=policy, gamma=args.gamma,
                                 target_update_freq=args.target_update_freq, num_burn_in=args.num_burn_in,
                                 train_freq=args.train_freq, batch_size=args.batch_size, train_interv=args.train_interv,
@@ -172,8 +172,13 @@ def main():  # noqa: D103
 
         lrs = LearningRateScheduler(lrdecay)
         '''
+        # lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        #     initial_learning_rate=1e-2,
+        #     decay_steps=5000,
+        #     decay_rate=0.9)
+        # optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
         optimizer = SGD(lr=args.alpha)
-        q_network.compile(optimizer, mean_huber_loss)
+        q_network.compile(optimizer=optimizer, loss=mean_huber_loss)
 
         sess.run(tf.global_variables_initializer())
 
@@ -185,11 +190,11 @@ def main():  # noqa: D103
         eval_driver_sim = Drivers()
         eval_env = Environment(driver_sim=eval_driver_sim)
         eval_memory = ReplayMemory(args.buffer_size, args.look_back_steps)
-        eval_policy = LinearDecayGreedyEpsilonPolicy(start_value=1, end_value=0.1,
+        eval_policy = LinearDecayGreedyEpsilonPolicy(start_value=1, end_value=0.01,
                                             num_steps=100, num_actions=args.num_actions)
         dqn_agent.fit(env=env, output_add=args.output,
                           eval_env=eval_env, eval_policy=eval_policy, eval_memory=eval_memory,
-                          num_iterations=args.num_iterations, max_episode_length=args.max_episode_length)
+                          num_iterations=args.num_iterations, max_episode_length=args.max_episode_length, lr=args.alpha)
 
 if __name__ == '__main__':
     main()

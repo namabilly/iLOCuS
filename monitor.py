@@ -68,7 +68,6 @@ def main():  # noqa: D103
     parser.add_argument('--env', default='driversim', help='Atari env name')
     parser.add_argument(
         '-o', '--output', default='deepQ', help='Directory to save data to')
-    parser.add_argument('--seed', default=703, type=int, help='Random seed')
     parser.add_argument("--num_actions", default=10, type=int, help="level of pricing")
 
     args = parser.parse_args()
@@ -83,10 +82,10 @@ def main():  # noqa: D103
                                                  num_steps=100, num_actions=args.num_actions)
 
     print('load trained model...')
-    q_net = load_model('ilocus-v0/driverSim-v0-run66/qnet-3of5.h5',
+    q_net = load_model('ilocus-v0/driverSim-v0-run114/qnet-0of5.h5',
                        custom_objects={'mean_huber_loss': mean_huber_loss})
 
-    num_episodes = 100
+    num_episodes = 50
     rewards = []
 
     mean_cost=[]
@@ -96,21 +95,26 @@ def main():  # noqa: D103
         eval_memory.clear()
         prev_state = env.reset()
         eval_memory.append_state(prev_state)
+        print("starting the simulator....")
+        # print(_compute_reward(prev_state[1, :, :]))
         total_reward = 0
         for t in range(20):
             # env.render()
             fwd_states = eval_memory.gen_forward_state()
             fwd_res = q_net.predict_on_batch(np.asarray(fwd_states))
+            print(fwd_res)
             _action = policy.select_action(fwd_res, False)
             action_map = np.reshape(_action, (SIZE_R, SIZE_C))
             mean_cost.append(np.sum(action_map))
             # Take 1 action
             next_state, reward, is_terminal = env.step(action_map)
-
+            # if t %10 == 1:
+            #     tmp_reward = _compute_reward(next_state[1, :, :])
+            #     print(tmp_reward)
             # if reward != 0:
             # print(total_reward)
             # print(next_state[1,:,:])
-            # print(action_map)
+            print(action_map)
             total_reward += np.mean(reward)
             if is_terminal:
                 print("Episode finished after {} timesteps".format(t + 1))
