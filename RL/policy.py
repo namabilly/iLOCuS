@@ -65,7 +65,10 @@ class GreedyPolicy(Policy):
     """
 
     def select_action(self, q_values, **kwargs):  # noqa: D102
-        return np.argmax(q_values)
+        batch_size = q_values.shape[0]
+        max_action = np.argmax(q_values, axis=1)
+        res = max_action
+        return res
 
 
 class GreedyEpsilonPolicy(Policy):
@@ -144,7 +147,7 @@ class LinearDecayGreedyEpsilonPolicy(GreedyEpsilonPolicy):
             if self.epsilon > self.end:
                 self.epsilon -= self.decay_stepsize
         else:
-            self.epsilon = 0.05
+            self.epsilon = 0
         return super(LinearDecayGreedyEpsilonPolicy, self).select_action(q_values)
 
     def reset(self):

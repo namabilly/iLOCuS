@@ -2,7 +2,7 @@ import json
 import os
 import random
 import numpy as np
-
+import copy
 SIZE_R = 5
 SIZE_C = 5
 
@@ -31,11 +31,17 @@ class Environment(object):
     #          reward: reward for the current pricing table
 
     def step(self, action):
-        new_state, is_terminal = self.driver_sim.step(action)
+        new_state = self.driver_sim.step(action)
         # new_state shape: (4, 15, 15)
         reward = self._compute_reward(new_state[1,:,:], self.objective)
-        # print(reward)
+        # print(np.min(reward))
+        # print(np.max(reward))
+        if np.max(reward) < 2.27:
+            is_terminal = True
+        else:
+            is_terminal = False
         return np.copy(new_state), reward, is_terminal
+
 
     '''
     Calculate reward
@@ -46,7 +52,7 @@ class Environment(object):
 
         # normalize
         state /= np.sum(state)
-
+        tmp = 1e-2 + np.abs((np.where(state != 0, np.log(state / objective), 1e+7)))
         # KL divergence
-        return -(np.where(state != 0, state * np.log(state / objective), 0))
+        return np.minimum(1000/(1+tmp) ,0.1*np.exp(1/tmp))
         

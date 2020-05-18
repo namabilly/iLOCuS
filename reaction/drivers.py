@@ -11,7 +11,7 @@ import time
 max_turn = 400
 save_graph = False
 save_data = False
-generating = True 
+generating = True
 req_pcell = 0
 driver_pcell = 100
 
@@ -206,7 +206,7 @@ class Drivers:
         # print("divergence is: %.10f" % (divergence))
         # self.divs.append(divergence)
         
-        return ret, False
+        return ret
 
     def get_utility(self, i, j):
         # replace with actual req/emp currently, will be historical values afterwards
@@ -239,8 +239,16 @@ class Drivers:
             if n <= prob[i]:
                 return arr[i]
         return arr[0]
-    
+
     def step(self, bonus):
+        for i in range(20):
+            self.each_step(bonus)
+            # print(self.state()[1,:,:])
+
+        return self.state()
+
+
+    def each_step(self, bonus):
         # advance time
         #self.time_idx
         self.counter += 1

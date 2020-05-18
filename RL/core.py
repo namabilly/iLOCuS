@@ -23,7 +23,14 @@ class Sample:
 
 def gen_map(action):
     res_map = np.zeros((SIZE_R, SIZE_C))
-    res_map[action//SIZE_C, action%SIZE_C] = 1
+    x = action//SIZE_C
+    y = action%SIZE_C
+    for i in range(3):
+        if x + i - 1 < SIZE_R:
+            for j in range(3):
+                if y + j -1 < SIZE_C:
+                    res_map[x+i-1, y+j-1] = 0.5
+    res_map[x, y] = 1
     return res_map
 
 class ReplayMemory:
@@ -72,23 +79,36 @@ class ReplayMemory:
         self.buffer_size = max_size
         self.current_size = 0
         self.buffer = [None for _ in range(max_size)]
-        self.index = -1 # track the index where the next sample should be stored
+        self.index = 0 # track the index where the next sample should be stored
         self.look_back_steps = look_back_steps
 
     def append_state(self, state):
-        _sample = Sample(state, None, 0, -1, True)
-        self.index = (self.index + 1) % self.buffer_size
+        _sample = Sample(state, None, None, None, None)
+        # self.index = (self.index + 1) % self.buffer_size
         # Store the frame into replay memory
         self.buffer[self.index] = _sample
+        self.index += 1
         # Update the current_size and the index for next storage
-        self.current_size = max(self.current_size, self.index + 1)
+        if self.current_size < self.buffer_size:
+            self.current_size += 1
+        if self.index == self.buffer_size:
+            self.index = 0
+
 
     def append_other(self, action, reward, timestamp, is_terminal):
         # Store the other info into replay memory
-        self.buffer[self.index].action = np.copy(action)
-        self.buffer[self.index].reward = reward
-        self.buffer[self.index].timestamp = timestamp
-        self.buffer[self.index].is_terminal = is_terminal
+        tmp_index = self.index - 1
+        if tmp_index < 0:
+            self.buffer[self.buffer_size - 1].action = np.copy(action)
+            self.buffer[self.buffer_size - 1].reward = reward
+            self.buffer[self.buffer_size - 1].timestamp = timestamp
+            self.buffer[self.buffer_size - 1].is_terminal = is_terminal
+        else:
+            self.buffer[tmp_index].action = np.copy(action)
+            self.buffer[tmp_index].reward = reward
+            self.buffer[tmp_index].timestamp = timestamp
+            self.buffer[tmp_index].is_terminal = is_terminal
+
 
     def sample(self, batch_size):
         # sample a minibatch of index
@@ -115,7 +135,10 @@ class ReplayMemory:
         return x, x_next, other_infos
     
     def gen_forward_state(self):
-        forward_states = [self.stacked_retrieve(self.index, i) for i in range(SIZE_R * SIZE_C)]
+        if self.index == 0:
+            forward_states = [self.stacked_retrieve(self.index-1, i) for i in range(SIZE_R * SIZE_C)]
+        else:
+            forward_states = [self.stacked_retrieve(self.current_size - 1, i) for i in range(SIZE_R * SIZE_C)]
         return np.stack(forward_states)
         # forward_states shape: (225, 5 + self.look_back_steps, 15, 15)
 
@@ -123,16 +146,20 @@ class ReplayMemory:
         # m, d, n, n0, location, p0-pt
         stacked_state = np.zeros((4 + self.look_back_steps, SIZE_R, SIZE_C))
         stacked_state[0:3,:,:] = self.buffer[sample_index].state
-        stacked_state[3,:,:] = gen_map(location)
-        timestamp = self.buffer[sample_index].timestamp
-        for t in range(1, min(timestamp, self.look_back_steps) + 1):
-            local_index = (sample_index - t) % self.buffer_size
-            # print(sample_index, timestamp, local_index)
-            stacked_state[- t] = self.buffer[local_index].action
-        
+        stacked_state[3, :, :] = gen_map(location)
+        if  self.buffer[sample_index-1] is not None:
+            timestamp = self.buffer[sample_index-1].timestamp
+            if timestamp is not None:
+                for t in range(1, min(timestamp+1, self.look_back_steps) + 1):
+                    local_index = (sample_index - t) % self.buffer_size
+                    # print(sample_index, timestamp, local_index)
+                    stacked_state[- t,:,:] = self.buffer[local_index].action
+        # else:
+        #     print(sample_index)
+
         return stacked_state
 
     def clear(self):
         self.current_size = 0
         self.buffer = [None for _ in range(self.buffer_size)]
-        self.index = -1 # track the index where the next sample should be stored
+        self.index = 0 # track the index where the next sample should be stored
