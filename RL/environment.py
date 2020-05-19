@@ -53,6 +53,7 @@ class Environment(object):
         # normalize
         state /= np.sum(state)
         tmp = 1e-2 + np.abs((np.where(state != 0, np.log(state / objective), 1e+7)))
+        tmp_reward = np.minimum(1000/(1+tmp) ,0.1*np.exp(1/tmp))
         # KL divergence
-        return np.minimum(1000/(1+tmp) ,0.1*np.exp(1/tmp))
+        return np.reshape(tmp_reward + np.mean(tmp_reward), SIZE_R*SIZE_C)
         

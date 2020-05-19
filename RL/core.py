@@ -112,22 +112,20 @@ class ReplayMemory:
 
     def sample(self, batch_size):
         # sample a minibatch of index
-        indexes = random.choice(self.current_size * SIZE_R * SIZE_C, batch_size, replace=False)
+        indexes = random.choice(self.current_size, batch_size, replace=False)
         x = []
         x_next = []  # For next state
         other_infos = []
         for _index in indexes:
-            sample_index = _index // (SIZE_R * SIZE_C)
-            location = _index % (SIZE_R * SIZE_C)
-            row, col = location // SIZE_C, location % SIZE_C
-            x.append(self.stacked_retrieve(sample_index, location))
-            other_infos.append((self.buffer[sample_index].action[row, col],
+            sample_index = _index
+            x.append(self.stacked_retrieve(sample_index))
+            other_infos.append((self.buffer[sample_index].action,#action: 5*5 matrix
                                 self.buffer[sample_index].is_terminal,
-                                self.buffer[sample_index].reward[row, col],
+                                self.buffer[sample_index].reward,#reward: 25*1
                                 ))
             _next_index = (sample_index + 1) % self.current_size
             # print(_next_index)
-            x_next.append(self.stacked_retrieve(_next_index, location))
+            x_next.append(self.stacked_retrieve(_next_index))
 
         x = np.asarray(x)
         x_next = np.asarray(x_next)
@@ -136,17 +134,16 @@ class ReplayMemory:
     
     def gen_forward_state(self):
         if self.index == 0:
-            forward_states = [self.stacked_retrieve(self.index-1, i) for i in range(SIZE_R * SIZE_C)]
+            forward_states = self.stacked_retrieve(self.index-1)
         else:
-            forward_states = [self.stacked_retrieve(self.current_size - 1, i) for i in range(SIZE_R * SIZE_C)]
-        return np.stack(forward_states)
-        # forward_states shape: (225, 5 + self.look_back_steps, 15, 15)
+            forward_states = self.stacked_retrieve(self.current_size - 1)
+        return np.expand_dims(forward_states, axis=0)
+        # forward_states shape: (225, 5 + self.look_back_steps, 5, 5)
 
-    def stacked_retrieve(self, sample_index, location):
+    def stacked_retrieve(self, sample_index):
         # m, d, n, n0, location, p0-pt
-        stacked_state = np.zeros((4 + self.look_back_steps, SIZE_R, SIZE_C))
+        stacked_state = np.zeros((3 + self.look_back_steps, SIZE_R, SIZE_C))
         stacked_state[0:3,:,:] = self.buffer[sample_index].state
-        stacked_state[3, :, :] = gen_map(location)
         if  self.buffer[sample_index-1] is not None:
             timestamp = self.buffer[sample_index-1].timestamp
             if timestamp is not None:

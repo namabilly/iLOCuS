@@ -103,15 +103,20 @@ class DQNAgent:
         # print(x)
         y_next = self.calc_q_values(x_next, target_q)  # reserve the order in mini_batch
         # print(x_next)
-        y_max = np.amax(y_next, axis=1)
+        tmp_y_next = np.reshape(y_next, [self.batch_size, 10, SIZE_R, SIZE_C])
+        y_max = np.reshape(np.amax(tmp_y_next, axis=1), [self.batch_size, SIZE_R, SIZE_C])
         # Q learning update
         for _sample_index, (action, is_terminal, reward) in enumerate(other_infos):
-            if is_terminal:
-                y[_sample_index, action] = reward
-            else:
-                y[_sample_index, action] = reward + self.gamma * y_max[_sample_index]
-        _max_action = np.argmax(y, axis=1)
-        # print(_max_action)
+            for rew_index, _reward in enumerate(reward):
+                tmp_rew_index = np.unravel_index(rew_index, (SIZE_R, SIZE_C))
+                tmp_index = np.ravel_multi_index(((action[tmp_rew_index[0], tmp_rew_index[1]],)+ tmp_rew_index), (10, SIZE_R, SIZE_C))
+                if is_terminal:
+                    y[_sample_index, tmp_index] = _reward
+                else:
+                    # print(y_max[_sample_index, tmp_rew_index[0], tmp_rew_index[1]])
+                    # print(_reward)
+                    y[_sample_index, tmp_index] = _reward + self.gamma * y_max[_sample_index, tmp_rew_index[0], tmp_rew_index[1]]
+        # print(x[:,-1,0,0])
         train_loss = self.q_network.train_on_batch(x, y)
         return train_loss
 
@@ -164,12 +169,15 @@ class DQNAgent:
                 if self.memory.current_size > self.num_burn_in:
                     fwd_states = self.memory.gen_forward_state()
                     fwd_res = self.calc_q_values(np.asarray(fwd_states), self.q_network)
-                    _action = self.policy.select_action(fwd_res, True)
+                    action_map = self.policy.select_action(fwd_res, True)
+                    # print(action_map.shape)
                 else:
-                    _action = np.random.randint(self.policy.num_actions, size=(SIZE_R * SIZE_C, 1))
+                    action_map = np.random.randint(self.policy.num_actions, size=(SIZE_R,  SIZE_C))
+                    # print(action_map.shape)
 
-                action_map = np.reshape(_action, (SIZE_R, SIZE_C))
+                # action_map = np.reshape(_action, (SIZE_R, SIZE_C))
                 # Take 1 action
+                # print(action_map)
                 next_state, reward, is_terminal = env.step(action_map)
                 # print("***training reward is...",np.sum(reward))
                 if is_terminal == True:
@@ -306,10 +314,11 @@ class DQNAgent:
                 # Generate samples according to different policy
                 fwd_states = eval_memory.gen_forward_state()
                 fwd_res = self.calc_q_values(np.asarray(fwd_states), self.q_network)
-                _action = eval_policy.select_action(fwd_res, False)
+                action_map = eval_policy.select_action(fwd_res, False)
 
-                action_map = np.reshape(_action, (SIZE_R, SIZE_C))
+                # action_map = np.reshape(_action, (SIZE_R, SIZE_C))
                 mean_cost += np.sum(action_map)
+
                 # Take 1 action
                 next_state, reward, is_terminal = eval_env.step(action_map)
                 
@@ -323,6 +332,7 @@ class DQNAgent:
 
             
             mean_reward += total_reward
+        print("evaluating action map is ", action_map)
         pricing_fp.close()
         print(' ********** average cost',mean_cost/num_episodes/max_episode_length, "*********")
         return mean_reward / num_episodes / max_episode_length
