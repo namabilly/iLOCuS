@@ -82,7 +82,7 @@ def main():  # noqa: D103
                                                  num_steps=100, num_actions=args.num_actions)
 
     print('load trained model...')
-    q_net = load_model('ilocus-v0/driverSim-v0-run121/qnet-1of5.h5',
+    q_net = load_model('ilocus-v0/driverSim-v0-run157/qnet-1of5.h5',
                        custom_objects={'mean_huber_loss': mean_huber_loss})
 
     num_episodes = 50
@@ -103,8 +103,8 @@ def main():  # noqa: D103
             fwd_states = eval_memory.gen_forward_state()
             fwd_res = q_net.predict_on_batch(np.asarray(fwd_states))
             print(fwd_res)
-            _action = policy.select_action(fwd_res, False)
-            action_map = np.reshape(_action, (SIZE_R, SIZE_C))
+            action_map = policy.select_action(fwd_res, False)
+            # action_map = np.reshape(_action, (SIZE_R, SIZE_C))
             mean_cost.append(np.sum(action_map))
             # Take 1 action
             next_state, reward, is_terminal = env.step(action_map)

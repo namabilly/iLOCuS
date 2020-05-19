@@ -322,13 +322,13 @@ class Drivers:
         # compute new state for output
         return self.state()
                         
-    def KL(self, state, objective):
-        state = np.copy(state) + 1e-7
-        state /= np.sum(state)
-        objective = np.copy(objective) + 1e-7
-        objective /= np.sum(objective)
-        # KL divergence
-        return -np.sum(np.where(state != 0, state * np.log(state / objective), 0))
+    # def KL(self, state, objective):
+    #     state = np.copy(state) + 1e-7
+    #     state /= np.sum(state)
+    #     objective = np.copy(objective) + 1e-7
+    #     objective /= np.sum(objective)
+    #     # KL divergence
+    #     return -np.sum(np.where(state != 0, state * np.log(state / objective), 0))
 
 # test its functionality
 # data = np.load('./matrices_10min/20151101_free.npy')
