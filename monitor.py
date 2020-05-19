@@ -4,28 +4,16 @@
 
 import argparse
 import os
-import random
-import time
 
 import numpy as np
-import tensorflow as tf
-from keras.layers import (Activation, Convolution2D, Dense, Flatten, Input, Dropout,
-                          Permute)
-from keras.models import Model
 from keras.models import load_model
 from RL.environment import Environment
 from reaction.drivers import Drivers
-from keras.optimizers import Adam
-from keras import losses
-from PIL import Image
 
-import RL as tfrl
-from RL.agent import DQNAgent
 from RL.policy import LinearDecayGreedyEpsilonPolicy
 from RL.objectives import mean_huber_loss, mean_huber_loss_duel
 from RL.core import ReplayMemory
-import pickle
-import matplotlib.pyplot as plt
+
 
 SIZE_R = 5
 SIZE_C = 5
