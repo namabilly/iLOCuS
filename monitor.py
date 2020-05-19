@@ -123,7 +123,7 @@ def main():  # noqa: D103
     print(np.std(tmp_rewards))
 
 def _compute_reward(state):
-
+    print(state.shape)
     objective = np.ones((SIZE_R, SIZE_C))
     objective /= np.sum(objective)
     state = np.copy(state) + 1e-7
@@ -133,7 +133,7 @@ def _compute_reward(state):
 
     # KL divergence
     # return np.sum((np.where(state != 0, state*np.log(state / objective), 0)))
-    return np.sum(state * np.log(state / objective))
+    return np.sum(np.sum(state * np.log(state / objective)))
 
 if __name__ == '__main__':
     main()
