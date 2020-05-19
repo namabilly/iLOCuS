@@ -90,7 +90,7 @@ def main():  # noqa: D103
             # env.render()
             fwd_states = eval_memory.gen_forward_state()
             fwd_res = q_net.predict_on_batch(np.asarray(fwd_states))
-            print(fwd_res)
+            # print(fwd_res)
             action_map = policy.select_action(fwd_res, False)
             # action_map = np.reshape(_action, (SIZE_R, SIZE_C))
             mean_cost.append(np.sum(action_map))
