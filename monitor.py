@@ -70,7 +70,7 @@ def main():  # noqa: D103
                                                  num_steps=100, num_actions=args.num_actions)
 
     print('load trained model...')
-    q_net = load_model('ilocus-v0/driverSim-v0-run157/qnet-2of5.h5',
+    q_net = load_model('ilocus-v0/driverSim-v0-run157/qnet-4of5.h5',
                        custom_objects={'mean_huber_loss': mean_huber_loss})
 
     num_episodes = 50
@@ -89,9 +89,9 @@ def main():  # noqa: D103
         total_reward = 0
         for t in range(20):
             # env.render()
-            print("start inside the loop....")
+            # print("start inside the loop....")
             fwd_states = eval_memory.gen_forward_state()
-            print(fwd_states[:,1,:,:])
+            # print(fwd_states[:,1,:,:])
             fwd_res = q_net.predict_on_batch(np.asarray(fwd_states))
             action_map = policy.select_action(fwd_res, False)
             # action_map = np.reshape(_action, (SIZE_R, SIZE_C))
@@ -111,9 +111,9 @@ def main():  # noqa: D103
                 break
             eval_memory.append_other(action_map, reward, t, is_terminal)
             prev_state = np.copy(next_state)
-            print("ending step state...")
-            print(next_state[1, :, :])
             eval_memory.append_state(prev_state)
+        print("ending step state...")
+        print(next_state[1, :, :])
         print(action_map)
         tmp_reward = _compute_reward(next_state[1, :, :])
 
