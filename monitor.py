@@ -112,7 +112,7 @@ def main():  # noqa: D103
             eval_memory.append_state(prev_state)
 
         tmp_reward = _compute_reward(next_state[1, :, :])
-        print(tmp_reward)
+        print(next_state[1, :, :])
         tmp_rewards.append(tmp_reward)
         # print(total_reward)
         rewards.append(total_reward)
@@ -123,7 +123,6 @@ def main():  # noqa: D103
     print(np.std(tmp_rewards))
 
 def _compute_reward(state):
-    print(state.shape)
     objective = np.ones((SIZE_R, SIZE_C))
     objective /= np.sum(objective)
     state = np.copy(state) + 1e-7
