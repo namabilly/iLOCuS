@@ -91,7 +91,7 @@ def main():  # noqa: D103
             # env.render()
             print("inside the loop....")
             fwd_states = eval_memory.gen_forward_state()
-            print(fwd_states[1,:,:])
+            print(fwd_states[:,1,:,:])
             fwd_res = q_net.predict_on_batch(np.asarray(fwd_states))
             action_map = policy.select_action(fwd_res, False)
             # action_map = np.reshape(_action, (SIZE_R, SIZE_C))

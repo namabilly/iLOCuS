@@ -243,7 +243,7 @@ class Drivers:
     def step(self, bonus):
         for i in range(20):
             self.each_step(bonus)
-            # print(self.state()[1,:,:])
+            print(self.state()[1,:,:])
 
         return self.state()
 
