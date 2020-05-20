@@ -84,7 +84,8 @@ def main():  # noqa: D103
         prev_state = env.reset()
         eval_memory.append_state(prev_state)
         print("starting the simulator....")
-        # print(_compute_reward(prev_state[1, :, :]))
+        print(_compute_reward(prev_state[1, :, :]))
+        print(prev_state[1,:,:])
         total_reward = 0
         for t in range(20):
             # env.render()
@@ -102,7 +103,7 @@ def main():  # noqa: D103
             # if reward != 0:
             # print(total_reward)
             # print(next_state[1,:,:])
-            print(action_map)
+
             total_reward += np.mean(reward)
             if is_terminal:
                 print("Episode finished after {} timesteps".format(t + 1))
@@ -110,7 +111,7 @@ def main():  # noqa: D103
             eval_memory.append_other(action_map, reward, t, is_terminal)
             prev_state = np.copy(next_state)
             eval_memory.append_state(prev_state)
-
+        print(action_map)
         tmp_reward = _compute_reward(next_state[1, :, :])
         print(next_state[1, :, :])
         tmp_rewards.append(tmp_reward)
