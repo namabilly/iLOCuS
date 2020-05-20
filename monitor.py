@@ -8,7 +8,7 @@ import os
 import numpy as np
 from keras.models import load_model
 from RL.environment import Environment
-from reaction.drivers import Drivers
+from reaction.drivers_false import Drivers
 
 from RL.policy import LinearDecayGreedyEpsilonPolicy
 from RL.objectives import mean_huber_loss, mean_huber_loss_duel
