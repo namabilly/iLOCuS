@@ -336,13 +336,13 @@ class Drivers:
 # print(len(data))
 # print(data[100])
 # print(data[100].sum())
-drivers = Drivers()
-drivers.reset(8, 1000)
-for i in range(max_turn):
-    drivers.step(np.ones((5,5)))
-# drivers.step(np.zeros((15,15)))
-y = drivers.divs
-if save_graph:
-    plt.plot(y)
-    plt.savefig(os.path.join('plots', 'generative_divergence'))
-    plt.clf()
+# drivers = Drivers()
+# drivers.reset(8, 1000)
+# for i in range(max_turn):
+#     drivers.step(np.ones((5,5)))
+# # drivers.step(np.zeros((15,15)))
+# y = drivers.divs
+# if save_graph:
+#     plt.plot(y)
+#     plt.savefig(os.path.join('plots', 'generative_divergence'))
+#     plt.clf()
