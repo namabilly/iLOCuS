@@ -89,7 +89,7 @@ def main():  # noqa: D103
         total_reward = 0
         for t in range(20):
             # env.render()
-            print("inside the loop....")
+            print("start inside the loop....")
             fwd_states = eval_memory.gen_forward_state()
             print(fwd_states[:,1,:,:])
             fwd_res = q_net.predict_on_batch(np.asarray(fwd_states))
@@ -111,6 +111,7 @@ def main():  # noqa: D103
                 break
             eval_memory.append_other(action_map, reward, t, is_terminal)
             prev_state = np.copy(next_state)
+            print("ending step state...")
             print(next_state[1, :, :])
             eval_memory.append_state(prev_state)
         print(action_map)
