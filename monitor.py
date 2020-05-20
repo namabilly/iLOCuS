@@ -79,6 +79,7 @@ def main():  # noqa: D103
     mean_cost=[]
     eval_memory = ReplayMemory(10000, 1)
     tmp_rewards = []
+    iter_rewards = []
     for episode in range(num_episodes):
         eval_memory.clear()
         prev_state = env.reset()
@@ -98,9 +99,9 @@ def main():  # noqa: D103
             mean_cost.append(np.sum(action_map))
             # Take 1 action
             next_state, reward, is_terminal = env.step(action_map)
-            # if t %10 == 1:
-            #     tmp_reward = _compute_reward(next_state[1, :, :])
-            #     print(tmp_reward)
+            if t %2 == 1:
+                _tmp_reward = _compute_reward(next_state[1, :, :])
+                iter_rewards.append(_tmp_reward)
             # if reward != 0:
             # print(total_reward)
             # print(next_state[1,:,:])
@@ -125,6 +126,7 @@ def main():  # noqa: D103
     print(np.std(rewards))
     print(np.mean(tmp_rewards))
     print(np.std(tmp_rewards))
+    print(iter_rewards)
 
 def _compute_reward(state):
     objective = np.ones((SIZE_R, SIZE_C))
