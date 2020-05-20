@@ -11,7 +11,7 @@ import time
 max_turn = 400
 save_graph = False
 save_data = False
-generating = True
+generating = False
 req_pcell = 0
 driver_pcell = 100
 
@@ -48,13 +48,14 @@ class Drivers:
         self.dest_count = []
         self.divs = []
 
-    def reset(self, time = 8, count = 1000, date = "20151101"):
+    def reset(self, time = 8, count = 1000, date = "20151102"):
         random.seed(None)
         self.time_idx = time * 30
         self.drivers = []
 
         dir_path = os.path.join(os.path.dirname(__file__), "../requests_2min")
-        req_path = os.path.join(dir_path, date + "_request_list.pickle")
+        req_path = os.path.join(dir_path, date + "_request_list_5.pickle")
+        # req_path = os.path.join(dir_path, date + "_request_list.pickle")
         # print(pickle.HIGHEST_PROTOCOL)
         with open(req_path, 'rb') as f:
             self.requests = pickle.load(f)
@@ -250,7 +251,7 @@ class Drivers:
 
     def each_step(self, bonus):
         # advance time
-        #self.time_idx
+        self.time_idx += 1
         self.counter += 1
         # count empty taxis in grids to assign requests
         self.empties = [[[] for i in range(self.LAT_GRID)] for j in range(self.LNG_GRID)]
