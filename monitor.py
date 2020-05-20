@@ -70,7 +70,7 @@ def main():  # noqa: D103
                                                  num_steps=100, num_actions=args.num_actions)
 
     print('load trained model...')
-    q_net = load_model('ilocus-v0/driverSim-v0-run157/qnet-1of5.h5',
+    q_net = load_model('ilocus-v0/driverSim-v0-run157/qnet-2of5.h5',
                        custom_objects={'mean_huber_loss': mean_huber_loss})
 
     num_episodes = 50
