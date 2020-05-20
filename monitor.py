@@ -89,9 +89,10 @@ def main():  # noqa: D103
         total_reward = 0
         for t in range(20):
             # env.render()
+            print("inside the loop....")
             fwd_states = eval_memory.gen_forward_state()
+            print(fwd_states[1,:,:])
             fwd_res = q_net.predict_on_batch(np.asarray(fwd_states))
-            # print(fwd_res)
             action_map = policy.select_action(fwd_res, False)
             # action_map = np.reshape(_action, (SIZE_R, SIZE_C))
             mean_cost.append(np.sum(action_map))
@@ -110,10 +111,11 @@ def main():  # noqa: D103
                 break
             eval_memory.append_other(action_map, reward, t, is_terminal)
             prev_state = np.copy(next_state)
+            print(next_state[1, :, :])
             eval_memory.append_state(prev_state)
         print(action_map)
         tmp_reward = _compute_reward(next_state[1, :, :])
-        print(next_state[1, :, :])
+
         tmp_rewards.append(tmp_reward)
         # print(total_reward)
         rewards.append(total_reward)
