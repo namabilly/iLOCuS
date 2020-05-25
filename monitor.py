@@ -70,7 +70,7 @@ def main():  # noqa: D103
                                                  num_steps=100, num_actions=args.num_actions)
 
     print('load trained model...')
-    q_net = load_model('ilocus-v0/driverSim-v0-run157/qnet-4of5.h5',
+    q_net = load_model('ilocus-v0/driverSim-v0-run157/qnet-2of5.h5',
                        custom_objects={'mean_huber_loss': mean_huber_loss})
 
     num_episodes = 50
@@ -88,7 +88,8 @@ def main():  # noqa: D103
         print(_compute_reward(prev_state[1, :, :]))
         print(prev_state[1,:,:])
         total_reward = 0
-        for t in range(20):
+        _iter_rewards = []
+        for t in range(50):
             # env.render()
             # print("start inside the loop....")
             fwd_states = eval_memory.gen_forward_state()
@@ -99,9 +100,9 @@ def main():  # noqa: D103
             mean_cost.append(np.sum(action_map))
             # Take 1 action
             next_state, reward, is_terminal = env.step(action_map)
-            if t %2 == 1:
+            if t % 5 == 0:
                 _tmp_reward = _compute_reward(next_state[1, :, :])
-                iter_rewards.append(_tmp_reward)
+                _iter_rewards.append(_tmp_reward)
             # if reward != 0:
             # print(total_reward)
             # print(next_state[1,:,:])
@@ -109,10 +110,12 @@ def main():  # noqa: D103
             total_reward += np.mean(reward)
             if is_terminal:
                 print("Episode finished after {} timesteps".format(t + 1))
+                _iter_rewards = []
                 break
             eval_memory.append_other(action_map, reward, t, is_terminal)
             prev_state = np.copy(next_state)
             eval_memory.append_state(prev_state)
+        iter_rewards.append(_iter_rewards)
         print("ending step state...")
         print(next_state[1, :, :])
         print(action_map)

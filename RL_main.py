@@ -120,7 +120,7 @@ def main():  # noqa: D103
             sess.run(tf.global_variables_initializer())
             #
             # load weights into model
-            q_network.load_weights(args.output + '/qnet.h5')
+            # q_network.load_weights(args.output + '/qnet.h5')
 
             driver_sim = Drivers()
             env = Environment(driver_sim=driver_sim)
@@ -137,7 +137,7 @@ def main():  # noqa: D103
                                 train_freq=args.train_freq, batch_size=args.batch_size, train_interv=args.train_interv,
                                 log_dir=args.log_dir)
 
-            dqn_agent.evaluate(eval_env, eval_memory, eval_policy, 10, 50)
+            dqn_agent.evaluate('0', eval_env, eval_memory, eval_policy, 10, 20)
         exit(0)
 
     '''Train the model'''

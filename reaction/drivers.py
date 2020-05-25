@@ -50,6 +50,8 @@ class Drivers:
 
     def reset(self, time = 8, count = 1000, date = "20151102"):
         random.seed(None)
+        dates = ["20151102", "20151103", "20151104", "20151105", "20151106"]
+        date = random.choice(dates)
         self.time_idx = time * 30
         self.drivers = []
 
@@ -121,8 +123,12 @@ class Drivers:
         distribution = [[float(data[i][j] / total) for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
 
         taxi_count = [[round(count * distribution[i][j]) for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
-        for i in range(1):
-            for j in range(1):
+        taxi_count = np.zeros((self.LAT_GRID, self.LNG_GRID), dtype=int)
+        for _ in range(100):
+            x, y = (random.randrange(self.LAT_GRID), random.randrange(self.LNG_GRID))
+            taxi_count[x][y] += 1
+        for i in range(self.LAT_GRID):
+            for j in range(self.LNG_GRID):
                 for k in range(driver_pcell if generating else taxi_count[i][j]): 
                     self.drivers.append(Driver(i, j))
         return self.state()
