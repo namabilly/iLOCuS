@@ -248,7 +248,7 @@ class Drivers:
         return arr[0]
 
     def step(self, bonus):
-        for i in range(20):
+        for i in range(5):
             self.each_step(bonus)
             # print(self.state()[1,:,:])
 

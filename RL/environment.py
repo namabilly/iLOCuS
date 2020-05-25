@@ -36,7 +36,7 @@ class Environment(object):
         reward = self._compute_reward(new_state[1,:,:], self.objective)
         # print(np.min(reward))
         # print(np.max(reward))
-        if np.max(reward) < 2.27:
+        if np.max(reward) < 2.27 or np.min(reward)<1:
             is_terminal = True
         else:
             is_terminal = False

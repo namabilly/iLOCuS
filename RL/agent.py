@@ -182,7 +182,7 @@ class DQNAgent:
                 # print("***training reward is...",np.sum(reward))
                 if is_terminal == True:
                     count_terminal += 1
-                    reward -= 50
+                    reward -= 1000
                 episode_reward.append(reward)
                 # append other infor to replay memory (action, reward, t, is_terminal)
                 self.memory.append_other(action_map, reward, t, is_terminal)
@@ -227,9 +227,9 @@ class DQNAgent:
                     if Q_update_counter % self.train_freq == 0:
                         # print(evalQ_update_counter)
                         tmp_value = []
-                        for _ in range(500):
+                        for _ in range(100):
                             evalQ_update_counter += 1
-                            if evalQ_update_counter % 5000 == 1:
+                            if evalQ_update_counter % 10000 == 1:
                                 K.set_value(self.q_network.optimizer.lr, lr / 10)
                             tmp_value = [evalQ_update_counter, self.update_policy(target_q)]
                         # print("loss decreses")
@@ -333,6 +333,7 @@ class DQNAgent:
             
             mean_reward += total_reward
         print("evaluating action map is ", action_map)
+        print("evaluating state is ", next_state[1,:,:])
         pricing_fp.close()
         print(' ********** average cost',mean_cost/num_episodes/max_episode_length, "*********")
         return mean_reward / num_episodes / max_episode_length
