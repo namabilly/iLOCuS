@@ -59,9 +59,8 @@ class Environment(object):
         # tmp_reward = -10*(state/np.exp(1))*(np.log(state/(np.exp(1)*objective)))
         # tmp_reward = 10*np.where(state < objective*np.exp(1), -100*(state/np.exp(1))*(np.log(state/(np.exp(1)*objective))), 500*(np.exp(1)*objective - state))
         # tmp_reward = np.where(state < objective*np.exp(1), -1000*(state/np.exp(1))*(np.log(state/(np.exp(1)*objective))), -50000*(state/np.exp(1))*(np.log(state/(np.exp(1)*objective))))
-        tmp_reward = np.where(state < objective * np.exp(1),
-                              -1000 * (state / np.exp(1)) * (np.log(state / (np.exp(1) * objective))),
-                              -50000 * (state / np.exp(1)) * (np.log(state / (np.exp(1) * objective))))
+        tmp_reward = -1000 * state * (np.log(state / objective))
+
         # print(tmp_reward + 0.1*np.mean(tmp_reward))
         # _tmp__ = np.reshape(tmp_reward + 0.5*np.mean(tmp_reward), SIZE_R*SIZE_C)
         # # print(_tmp__)
