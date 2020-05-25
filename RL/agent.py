@@ -146,6 +146,8 @@ class DQNAgent:
         episode_counter = 0
         episode_reward = []
         episode_len = []
+        best_reward = 0
+        kl_reward_list = []
         while True:
             if Q_update_counter > num_iterations:
                 break
@@ -182,7 +184,7 @@ class DQNAgent:
                 # print("***training reward is...",np.sum(reward))
                 if is_terminal == True:
                     count_terminal += 1
-                    reward -= 1000
+                    reward -= 50
                 episode_reward.append(reward)
                 # append other infor to replay memory (action, reward, t, is_terminal)
                 self.memory.append_other(action_map, reward, t, is_terminal)
@@ -195,30 +197,35 @@ class DQNAgent:
                     pickle.dump(episode_len, open(output_add + "/episode_length-1of5.p", "wb"))
                     pickle.dump(loss, open(output_add + "/loss-1of5.p", "wb"))
                     pickle.dump(score, open(output_add + "/score-1of5.p", "wb"))
+                    pickle.dump(kl_reward_list, open(output_add + "/reward-best.p", "wb"))
                 elif Q_update_counter == num_iterations // 5 * 2:
                     self.q_network.save(output_add + '/qnet-2of5.h5')
                     # Save the episode_len, loss, score into files
                     pickle.dump(episode_len, open(output_add + "/episode_length-2of5.p", "wb"))
                     pickle.dump(loss, open(output_add + "/loss-2of5.p", "wb"))
                     pickle.dump(score, open(output_add + "/score-2of5.p", "wb"))
+                    pickle.dump(kl_reward_list, open(output_add + "/reward-best.p", "wb"))
                 elif Q_update_counter == num_iterations // 5 * 3:
                     self.q_network.save(output_add + '/qnet-3of5.h5')
                     # Save the episode_len, loss, score into files
                     pickle.dump(episode_len, open(output_add + "/episode_length-3of5.p", "wb"))
                     pickle.dump(loss, open(output_add + "/loss-3of5.p", "wb"))
                     pickle.dump(score, open(output_add + "/score-3of5.p", "wb"))
+                    pickle.dump(kl_reward_list, open(output_add + "/reward-best.p", "wb"))
                 elif Q_update_counter == num_iterations // 5 * 4:
                     self.q_network.save(output_add + '/qnet-4of5.h5')
                     # Save the episode_len, loss, score into files
                     pickle.dump(episode_len, open(output_add + "/episode_length-4of5.p", "wb"))
                     pickle.dump(loss, open(output_add + "/loss-4of5.p", "wb"))
                     pickle.dump(score, open(output_add + "/score-4of5.p", "wb"))
+                    pickle.dump(kl_reward_list, open(output_add + "/reward-best.p", "wb"))
                 elif Q_update_counter == num_iterations:
                     self.q_network.save(output_add + '/qnet-5of5.h5')
                     # Save the episode_len, loss, score into files
                     pickle.dump(episode_len, open(output_add + "/episode_length-5of5.p", "wb"))
                     pickle.dump(loss, open(output_add + "/loss-5of5.p", "wb"))
                     pickle.dump(score, open(output_add + "/score-5of5.p", "wb"))
+                    pickle.dump(kl_reward_list, open(output_add + "/reward-best.p", "wb"))
 
                 # Update the Q net using minibatch from replay memory and update the target Q net
                 if self.memory.current_size > self.num_burn_in :
@@ -229,7 +236,7 @@ class DQNAgent:
                         tmp_value = []
                         for _ in range(100):
                             evalQ_update_counter += 1
-                            if evalQ_update_counter % 10000 == 1:
+                            if (Q_update_counter % 50000 == 0) and (Q_update_counter < 200000):
                                 K.set_value(self.q_network.optimizer.lr, lr / 10)
                             tmp_value = [evalQ_update_counter, self.update_policy(target_q)]
                         # print("loss decreses")
@@ -237,12 +244,23 @@ class DQNAgent:
                         # evaluate_counter += 1
                         # if evaluate_counter % 20000 == 0:
                         #     # if evaluate_counter % 100 == 0:
-                        if evalQ_update_counter % 50 == 0:
+                        if evalQ_update_counter % 500 == 0:
                             loss.append(tmp_value)
-                            score.append([Q_update_counter, self.evaluate(str(episode_counter), eval_env, eval_memory, eval_policy, 10, 50)])
+                            _eval_reward = self.evaluate(str(episode_counter), eval_env, eval_memory, eval_policy, 10, 50)
+                            score.append([Q_update_counter, _eval_reward[0]])
+                            kl_reward_list.append([Q_update_counter, _eval_reward[-1]])
                             print("1 The average total score for 10 episodes after ", evalQ_update_counter, " updates is ", score[-1])
                             print("2 The loss after ", evalQ_update_counter, " updates is: ", loss[-1])
+                            print("3 The KL divergence after ", evalQ_update_counter, " updates is: ", _eval_reward[-1])
                             print(action_map)
+                            if _eval_reward[-1] > best_reward:
+                                self.q_network.save(output_add + '/qnet-best.h5')
+                                # Save the episode_len, loss, score into files
+                                pickle.dump(episode_len, open(output_add + "/episode_best.p", "wb"))
+                                pickle.dump(loss, open(output_add + "/loss-best.p", "wb"))
+                                pickle.dump(score, open(output_add + "/score-best.p", "wb"))
+                                pickle.dump(kl_reward_list, open(output_add + "/reward-best.p", "wb"))
+                                best_reward = float(_eval_reward[-1])
                         # Update the target Q network every self.target_update_freq steps
                     targetQ_update_counter += 1
                     # print(targetQ_update_counter)
@@ -288,6 +306,17 @@ class DQNAgent:
     #         self.target_model.reset_states()
     # def update_target_model_hard(self):
     #     self.target_model.set_weights(self.model.get_weights())
+    def _tmp_compute_reward(self, state):
+        objective = np.ones((SIZE_R, SIZE_C))
+        objective /= np.sum(objective)
+        state = np.copy(state) + 1e-7
+
+        # normalize
+        state /= np.sum(state)
+
+        # KL divergence
+        # return np.sum((np.where(state != 0, state*np.log(state / objective), 0)))
+        return np.sum(np.sum(state * np.log(state / objective)))
 
     def evaluate(self, env_name, eval_env, eval_memory, eval_policy, num_episodes, max_episode_length=None):
         """Test your agent with a provided environment.
@@ -303,7 +332,7 @@ class DQNAgent:
         print(' ********** Evaluating *******')
         mean_reward = 0
         mean_cost = 0
-
+        kl_reward = 0
         pricing_fp = open('log/pricing_'+env_name+'.txt','w')
         for _ in range(num_episodes):
             total_reward = 0
@@ -329,11 +358,12 @@ class DQNAgent:
                 eval_memory.append_other(action_map, reward, t, is_terminal)
                 prev_state = copy.deepcopy(next_state)
                 eval_memory.append_state(prev_state)
-
+            kl_reward += self._tmp_compute_reward(next_state[1,:,:])
             
             mean_reward += total_reward
         print("evaluating action map is ", action_map)
         print("evaluating state is ", next_state[1,:,:])
         pricing_fp.close()
         print(' ********** average cost',mean_cost/num_episodes/max_episode_length, "*********")
-        return mean_reward / num_episodes / max_episode_length
+        return mean_reward / num_episodes / max_episode_length, kl_reward/num_episodes
+

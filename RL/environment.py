@@ -36,7 +36,7 @@ class Environment(object):
         reward = self._compute_reward(new_state[1,:,:], self.objective)
         # print(np.min(reward))
         # print(np.max(reward))
-        if np.max(reward) < 2.27 or np.min(reward)<1:
+        if np.max(reward) < 10 and np.min(reward)< 0:
             is_terminal = True
         else:
             is_terminal = False
@@ -48,12 +48,28 @@ class Environment(object):
     '''
     # compute the reward given the current distribution of taxis and desired distribution.
     def _compute_reward(self, state, objective):
-        state = np.copy(state) + 1e-7
-
+        # state = np.copy(state)
+        state = state.astype(float)
         # normalize
+        # print(state)
         state /= np.sum(state)
-        tmp = 1e-2 + np.abs((np.where(state != 0, np.log(state / objective), 1e+7)))
-        tmp_reward = np.minimum(1000/(1+tmp) ,0.1*np.exp(1/tmp))
-        # KL divergence
-        return np.reshape(tmp_reward + np.mean(tmp_reward), SIZE_R*SIZE_C)
+        state = state + 1e-5
+        # print(state)
+        # print(objective)
+        # tmp_reward = -10*(state/np.exp(1))*(np.log(state/(np.exp(1)*objective)))
+        # tmp_reward = 10*np.where(state < objective*np.exp(1), -100*(state/np.exp(1))*(np.log(state/(np.exp(1)*objective))), 500*(np.exp(1)*objective - state))
+        # tmp_reward = np.where(state < objective*np.exp(1), -1000*(state/np.exp(1))*(np.log(state/(np.exp(1)*objective))), -50000*(state/np.exp(1))*(np.log(state/(np.exp(1)*objective))))
+        tmp_reward = np.where(state < objective * np.exp(1),
+                              -1000 * (state / np.exp(1)) * (np.log(state / (np.exp(1) * objective))),
+                              -50000 * (state / np.exp(1)) * (np.log(state / (np.exp(1) * objective))))
+        # print(tmp_reward + 0.1*np.mean(tmp_reward))
+        # _tmp__ = np.reshape(tmp_reward + 0.5*np.mean(tmp_reward), SIZE_R*SIZE_C)
+        # # print(_tmp__)
+        # _tmp___ = np.reshape(_tmp__, [SIZE_R, SIZE_C])
+        # print(_tmp___)
+        # tmp = 1e-2 + np.abs((np.where(state != 0, np.log(state / objective), np.log(1e-5))))
+        # tmp_reward = np.minimum(10/(1+tmp) -1 ,np.exp(1/tmp))
+        # # KL divergence
+        # return np.reshape(tmp_reward + 0.5*np.mean(tmp_reward) - 5 , SIZE_R*SIZE_C)
+        return np.reshape(tmp_reward + 0.1*np.mean(tmp_reward), SIZE_R*SIZE_C)
         
