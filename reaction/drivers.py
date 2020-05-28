@@ -9,9 +9,9 @@ import matplotlib.pylab as plt
 import time
 
 max_turn = 400
-save_graph = False
-save_data = False
-generating = True
+save_graph = True
+save_data = True
+generating = False
 req_pcell = 5
 driver_pcell = 20
 
@@ -29,14 +29,15 @@ class Driver:
 class Drivers:
     LNG_MIN = 116.3002190000
     LNG_MAX = 116.4802271600
-    LNG_GRID = 15
+    LNG_GRID = 5
     LAT_MIN = 39.8493175200
     LAT_MAX = 39.9836824300
-    LAT_GRID = 15
+    LAT_GRID = 5
     LNG_STEP = (LNG_MAX - LNG_MIN) / LNG_GRID
     LAT_STEP = (LAT_MAX - LAT_MIN) / LAT_GRID
-    MOVE = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-
+    # MOVE = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+    MOVE = [(0, 1), (0, -1), (1, 0), (-1, 0), (0, 0)]
+    
     def __init__(self):
         self.time_idx = 0
         self.drivers = []
@@ -47,14 +48,15 @@ class Drivers:
         self.counter = 0
         self.dest_count = []
         self.divs = []
+        self.divs2 = []
 
-    def reset(self, time = 8, count = 1000, date = "20151101"):
+    def reset(self, time = 8, count = 1000, date = "20151102"):
         random.seed(None)
         self.time_idx = time * 30
         self.drivers = []
 
         dir_path = os.path.join(os.path.dirname(__file__), "../requests_2min")
-        req_path = os.path.join(dir_path, date + "_request_list.pickle")
+        req_path = os.path.join(dir_path, date + "_request_list_5.pickle")
         with open(req_path, 'rb') as f:
             self.requests = pickle.load(f)
         
@@ -92,10 +94,10 @@ class Drivers:
             np.save(os.path.join('result', '20151101_' + str(self.time_idx) + '_request_dest.npy'), self.dest_count)
         
         if save_graph:
-            ax = sns.heatmap(self.dest_count, linewidth=0.5)
+            ax = sns.heatmap(self.dest_count, annot=True, linewidth=0.5)
             plt.savefig(os.path.join('plots', '20151101_' + str(self.time_idx) + '_request_dest'))
             plt.clf()
-            ax = sns.heatmap(start_count, linewidth=0.5)
+            ax = sns.heatmap(start_count, annot=True, linewidth=0.5)
             plt.savefig(os.path.join('plots', '20151101_' + str(self.time_idx) + '_' + str(self.counter) + '_request_start'))
             plt.clf()
             
@@ -153,8 +155,9 @@ class Drivers:
         path = []
         cx, cy = a[0], a[1]
         path.append((cx, cy))
+        n = random.random()
         while cx != b[0] or cy != b[1]:
-            if random.random() < 0.5:
+            if n < 0.5:
                 if cx != b[0]:
                     cx += dx
                 else:
@@ -190,8 +193,8 @@ class Drivers:
             if save_data:
                 np.save(os.path.join('result', '20151101_' + str(self.time_idx) + '_' + str(self.counter) + '_request_taxi.npy'), taxi_count)        
             if save_graph:
-                ax = sns.heatmap(taxi_count, linewidth=0.5)
-                plt.show()
+                ax = sns.heatmap(taxi_count, annot=True, linewidth=0.5)
+                # plt.show()
                 plt.savefig(os.path.join('plots', '20151101_' + str(self.time_idx) + '_' + str(self.counter) + '_request_taxi'))
                 plt.clf()
         
@@ -199,11 +202,14 @@ class Drivers:
         ret[0,:,:] = request_count
         ret[1,:,:] = taxi_count
         ret[2,:,:] = empty_count
-        
-        divergence = self.KL(taxi_count, self.dest_count)
-        print("divergence is: %.10f" % (divergence))
+        '''
+        divergence = self.KL(taxi_count[3:12, 3:12], np.ones((9,9)))
+        print("inner divergence is: %.10f" % (divergence))
         self.divs.append(divergence)
-        
+        divergence = self.KL(taxi_count, np.ones((15,15)))
+        print("divergence is: %.10f" % (divergence))
+        self.divs2.append(divergence)
+        '''
         return ret, False
 
     def get_utility(self, i, j):
@@ -238,9 +244,38 @@ class Drivers:
                 return arr[i]
         return arr[0]
     
+    def direction(self, pos, bonus):
+        cx, cy = pos
+        val = [0, 0, 0, 0, 0]
+        # average direction
+        for i in range(4):
+            nx, ny = cx + self.MOVE[i][0], cy + self.MOVE[i][1]
+            v = 0
+            n = 0
+            while self.inside(nx, ny):
+                v += bonus[nx][ny] + self.get_utility(nx, ny)
+                n += 1
+                nx, ny = nx + self.MOVE[i][0], ny + self.MOVE[i][1]
+            if n > 0:
+                val[i] = v/n
+        val[4] = bonus[cx][cy] + self.get_utility(cx, cy)
+        # softmax
+        sum = 0
+        prob = []
+        for v in val:
+            sum += pow(math.e, v)
+            prob.append(sum)
+        prob /= sum
+        n = np.random.random()
+        for i in range(5):
+            if n <= prob[i]:
+                return (cx + self.MOVE[i][0], cy + self.MOVE[i][1])
+        return (cx + self.MOVE[0][0], cy + self.MOVE[0][1])
+    
+    
     def step(self, bonus):
         # advance time
-        #self.time_idx
+        self.time_idx += 1
         self.counter += 1
         # count empty taxis in grids to assign requests
         self.empties = [[[] for i in range(self.LAT_GRID)] for j in range(self.LNG_GRID)]
@@ -300,7 +335,8 @@ class Drivers:
                             candidates.append((nx, ny))
                     '''
                 #dest = candidates[math.floor(np.random.random() * len(candidates))]
-                dest = self.softmax(candidates, bonus)
+                #dest = self.softmax(candidates, bonus)
+                dest = self.direction((cx, cy), bonus)
                 driver.grid_x, driver.grid_y = dest
             else:
                 # currently occupied: go to the next grid in itinerary
@@ -318,7 +354,7 @@ class Drivers:
         objective = np.copy(objective) + 1e-7
         objective /= np.sum(objective)
         # KL divergence
-        return -np.sum(np.where(state != 0, state * np.log(state / objective), 0))
+        return np.sum(np.where(state != 0, state * np.log(state / objective), 0))
 
 # test its functionality
 # data = np.load('./matrices_10min/20151101_free.npy')
@@ -331,7 +367,10 @@ for i in range(max_turn):
     drivers.step(np.ones((15,15)))
 # drivers.step(np.zeros((15,15)))
 y = drivers.divs
+y2 = drivers.divs2
 if save_graph:
     plt.plot(y)
+    plt.plot(y2)
+    plt.legend(['center 9*9', '15*15'])
     plt.savefig(os.path.join('plots', 'generative_divergence'))
     plt.clf()
