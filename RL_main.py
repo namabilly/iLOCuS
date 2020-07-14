@@ -61,7 +61,7 @@ def main():  # noqa: D103
     parser.add_argument("--map_shape", default=(5, 5), type=tuple, help="map size")
     parser.add_argument("--num_actions", default=10, type=int, help="level of pricing")
 
-    parser.add_argument("--gamma", default=0.8, type=float, help="Discount factor")
+    parser.add_argument("--gamma", default=0.56, type=float, help="Discount factor")
     parser.add_argument("--alpha", default=1e-2, type=float, help="Learning rate")
     parser.add_argument("--epsilon", default=0.5, type=float, help="Exploration probability for epsilon-greedy")
     parser.add_argument("--target_update_freq", default=20, type=int,
@@ -104,7 +104,7 @@ def main():  # noqa: D103
     os.mkdir(args.log_dir)
     # Initiating policy for both tasks (training and evaluating)
     policy = LinearDecayGreedyEpsilonPolicy(start_value=1, end_value=0.1,
-                                            num_steps=50000, num_actions=args.num_actions)
+                                            num_steps=10000, num_actions=args.num_actions)
 
     if not args.train:
         '''Evaluate the model'''
