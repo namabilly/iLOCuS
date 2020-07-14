@@ -48,8 +48,8 @@ class Drivers:
         self.dest_count = []
         self.divs = []
 
-    def reset(self, time = 8, count = 1000, date = "20151102"):
-        random.seed(None)
+    def reset(self, time = 8, count = 1000, date = "20151102", seed_=None):
+        random.seed(seed_)
         dates = ["20151102", "20151103", "20151104", "20151105", "20151106"]
         date = random.choice(dates)
         self.time_idx = time * 30
@@ -248,7 +248,7 @@ class Drivers:
         return arr[0]
 
     def step(self, bonus):
-        for i in range(5):
+        for i in range(1):
             self.each_step(bonus)
             # print(self.state()[1,:,:])
 
