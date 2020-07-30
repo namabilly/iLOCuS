@@ -11,7 +11,7 @@ import time
 max_turn = 400
 save_graph = False
 save_data = False
-generating = False
+generating = True
 req_pcell = 0
 driver_pcell = 100
 
@@ -48,16 +48,13 @@ class Drivers:
         self.dest_count = []
         self.divs = []
 
-    def reset(self, time = 8, count = 1000, date = "20151102", seed_=None):
-        random.seed(seed_)
-        dates = ["20151102", "20151103", "20151104", "20151105", "20151106"]
-        date = random.choice(dates)
+    def reset(self, time = 8, count = 1000, date = "20151101"):
+        random.seed(None)
         self.time_idx = time * 30
         self.drivers = []
 
         dir_path = os.path.join(os.path.dirname(__file__), "../requests_2min")
-        req_path = os.path.join(dir_path, date + "_request_list_5.pickle")
-        # req_path = os.path.join(dir_path, date + "_request_list.pickle")
+        req_path = os.path.join(dir_path, date + "_request_list.pickle")
         # print(pickle.HIGHEST_PROTOCOL)
         with open(req_path, 'rb') as f:
             self.requests = pickle.load(f)
@@ -123,13 +120,8 @@ class Drivers:
         distribution = [[float(data[i][j] / total) for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
 
         taxi_count = [[round(count * distribution[i][j]) for j in range(self.LNG_GRID)] for i in range(self.LAT_GRID)]
-        taxi_count = np.zeros((self.LAT_GRID, self.LNG_GRID), dtype=int)
-        for _ in range(100):
-            x, y = (random.randrange(self.LAT_GRID), random.randrange(self.LNG_GRID))
-            taxi_count[x][y] += 1
-        # print(taxi_count)
-        for i in range(self.LAT_GRID):
-            for j in range(self.LNG_GRID):
+        for i in range(1):
+            for j in range(1):
                 for k in range(driver_pcell if generating else taxi_count[i][j]): 
                     self.drivers.append(Driver(i, j))
         return self.state()
@@ -249,16 +241,15 @@ class Drivers:
         return arr[0]
 
     def step(self, bonus):
-        for i in range(5):
+        for i in range(20):
             self.each_step(bonus)
-            # print(self.state()[1,:,:])
 
         return self.state()
 
 
     def each_step(self, bonus):
         # advance time
-        self.time_idx += 1
+        #self.time_idx
         self.counter += 1
         # count empty taxis in grids to assign requests
         self.empties = [[[] for i in range(self.LAT_GRID)] for j in range(self.LNG_GRID)]
@@ -330,26 +321,26 @@ class Drivers:
         # compute new state for output
         return self.state()
                         
-    # def KL(self, state, objective):
-    #     state = np.copy(state) + 1e-7
-    #     state /= np.sum(state)
-    #     objective = np.copy(objective) + 1e-7
-    #     objective /= np.sum(objective)
-    #     # KL divergence
-    #     return -np.sum(np.where(state != 0, state * np.log(state / objective), 0))
+    def KL(self, state, objective):
+        state = np.copy(state) + 1e-7
+        state /= np.sum(state)
+        objective = np.copy(objective) + 1e-7
+        objective /= np.sum(objective)
+        # KL divergence
+        return -np.sum(np.where(state != 0, state * np.log(state / objective), 0))
 
 # test its functionality
 # data = np.load('./matrices_10min/20151101_free.npy')
 # print(len(data))
 # print(data[100])
 # print(data[100].sum())
-# drivers = Drivers()
-# drivers.reset(8, 1000)
-# for i in range(max_turn):
-#     drivers.step(np.ones((5,5)))
-# # drivers.step(np.zeros((15,15)))
-# y = drivers.divs
-# if save_graph:
-#     plt.plot(y)
-#     plt.savefig(os.path.join('plots', 'generative_divergence'))
-#     plt.clf()
+drivers = Drivers()
+drivers.reset(8, 1000)
+for i in range(max_turn):
+    drivers.step(np.ones((5,5)))
+# drivers.step(np.zeros((15,15)))
+y = drivers.divs
+if save_graph:
+    plt.plot(y)
+    plt.savefig(os.path.join('plots', 'generative_divergence'))
+    plt.clf()

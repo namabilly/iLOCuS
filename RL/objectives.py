@@ -3,7 +3,7 @@
 import tensorflow as tf
 
 
-def mean_huber_loss(y_true, y_pred, max_grad=1.):
+def mean_huber_loss(y_true, y_pred, max_grad=0.5):
     """Return mean huber loss.
     Parameters
     ----------
@@ -21,7 +21,7 @@ def mean_huber_loss(y_true, y_pred, max_grad=1.):
     """
     error = y_true - y_pred
     try:
-        loss = tf.select(tf.abs(error)<max_grad, 0.5*tf.square(error), tf.abs(error)-0.5)
+        loss = tf.select(tf.abs(error)<max_grad, 0.5*tf.square(error), max_grad*(tf.abs(error)-0.5*max_grad))
     except:
         loss = tf.where(tf.abs(error)<max_grad, 0.5*tf.square(error), tf.abs(error)-0.5)
     return tf.reduce_mean(loss)

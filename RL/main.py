@@ -38,7 +38,7 @@ def main():  # noqa: D103
 
     parser.add_argument("-o", "--output", default="ilocus-v0", type=str, help="Directory to save data to")
     parser.add_argument("--seed", default=0, type=int, help="Random seed")
-    parser.add_argument("--train", default=True, type=bool, help="Train/Evaluate, set True if train the model")
+    parser.add_argument("--train", default=True, action='store_false', help="Train/Evaluate, set True if train the model")
     parser.add_argument("--model_path", default="atari-v0", type=str, help="specify model path to evaluation")
     parser.add_argument("--max_grad", default=1.0, type=float, help="Parameter for huber loss")
     parser.add_argument("--log_dir", default="log", type=str, help="specify log folder to save evaluate result")
