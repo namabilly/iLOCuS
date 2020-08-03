@@ -3,8 +3,7 @@
 from numpy import random
 import numpy as np
 
-SIZE_R = 5
-SIZE_C = 5
+SIZE = (5,)
 
 class Sample:
     """Represents a reinforcement learning sample.
@@ -21,17 +20,19 @@ class Sample:
         self.timestamp = timestamp
         self.is_terminal = is_terminal
 
+'''
 def gen_map(action):
-    res_map = np.zeros((SIZE_R, SIZE_C))
-    x = action//SIZE_C
-    y = action%SIZE_C
+    res_map = np.zeros(SIZE)
+    x = action//SIZE[1]
+    y = action%SIZE[1]
     for i in range(3):
-        if x + i - 1 < SIZE_R:
+        if x + i - 1 < SIZE[0]:
             for j in range(3):
-                if y + j -1 < SIZE_C:
+                if y + j -1 < SIZE[1]:
                     res_map[x+i-1, y+j-1] = 0.5
     res_map[x, y] = 1
     return res_map
+'''
 
 class ReplayMemory:
     """Interface for replay memories.
@@ -142,15 +143,15 @@ class ReplayMemory:
 
     def stacked_retrieve(self, sample_index):
         # m, d, n, n0, location, p0-pt
-        stacked_state = np.zeros((3 + self.look_back_steps, SIZE_R, SIZE_C))
-        stacked_state[0:3,:,:] = self.buffer[sample_index].state
+        stacked_state = np.zeros((3 + self.look_back_steps,) + SIZE)
+        stacked_state[0:3,:] = self.buffer[sample_index].state
         if  self.buffer[sample_index-1] is not None:
             timestamp = self.buffer[sample_index-1].timestamp
             if timestamp is not None:
                 for t in range(1, min(timestamp+1, self.look_back_steps) + 1):
                     local_index = (sample_index - t) % self.buffer_size
                     # print(sample_index, timestamp, local_index)
-                    stacked_state[- t,:,:] = self.buffer[local_index].action
+                    stacked_state[- t,:] = self.buffer[local_index].action
         # else:
         #     print(sample_index)
 

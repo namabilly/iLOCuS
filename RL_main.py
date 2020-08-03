@@ -58,7 +58,7 @@ def main():  # noqa: D103
     parser = argparse.ArgumentParser(description="Run DQN on iLOCuS")
     parser.add_argument("--network_name", default="deep_q_network", type=str, help="Type of model to use")
     parser.add_argument("--batch_size", default=128, type=int, help="Batch size")
-    parser.add_argument("--map_shape", default=(5, 5), type=tuple, help="map size")
+    parser.add_argument("--map_shape", default=(5,), type=tuple, help="map size")
     parser.add_argument("--num_actions", default=10, type=int, help="level of pricing")
 
     parser.add_argument("--gamma", default=0.81, type=float, help="Discount factor")
