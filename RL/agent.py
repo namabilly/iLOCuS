@@ -166,6 +166,10 @@ class DQNAgent:
             prev_state = env.reset()
             # print(prev_state[1,:,:])
             count_terminal = 0
+            
+            # k means clstering
+            prev_state, color = self.k_means(5, prev_state)
+            
             self.memory.append_state(prev_state)
             for t in range(max_episode_length):
                 # Generate samples according to different policy
@@ -181,7 +185,17 @@ class DQNAgent:
                 # action_map = np.reshape(_action, (SIZE_R, SIZE_C))
                 # Take 1 action
                 # print(action_map)
-                next_state, reward, is_terminal = env.step(action_map)
+                
+                # map action from k to 5*5 according to group assignment
+                feed_action = np.zeros((SIZE_R, SIZE_C))
+                for i in range(len(color)):
+                    feed_action[i // SIZE_C, i % SIZE_C] = action_map[color[i]]
+                
+                next_state, reward, is_terminal = env.step(feed_action)
+                
+                # group state
+                next_state = self.group(5, next_state, color)
+                
                 # print("***training reward is...",reward)
                 # print(prev_state[1,:,:])
                 # print(next_state[1,:,:])
@@ -312,6 +326,74 @@ class DQNAgent:
     #         self.target_model.reset_states()
     # def update_target_model_hard(self):
     #     self.target_model.set_weights(self.model.get_weights())
+    
+    
+    # Input
+    #   k - number of clusters
+    #   state - original state map 4*5*5
+    #   max_iteration - maximum number of iteration allowed
+    # Output
+    #   centroid - the k centroid values of k clusters, 4*k
+    #   color - the group assignment 1*(15*15)
+    def k_means(self, k, state, max_iteration = 300):
+        centroid = []
+        size = state.shape[1] * state.shape[2]
+        group = [[] for _ in range(k)]
+        center = np.random.choice(size, k, replace=False)
+        for c in center:
+            centroid.append(state[:, c // state.shape[1], c % state.shape[1]])
+        state = np.reshape(state, (4, size)).T
+        color = self.assign(k, state, centroid)
+        precentroid = []
+        iter = 0
+        while (not self.comp_centroid(centroid, precentroid)):
+            precentroid = centroid
+            iter += 1
+            group = [[] for _ in range(k)]
+            for i in range(size):
+                group[color[i]].append(state[i])
+            centroid = [np.mean(c, axis=0) for c in group]
+            color = self.assign(k, state, centroid)
+            if (iter >= max_iteration):
+                break
+        centroid = np.reshape(np.asarray(centroid).T, (4, k))
+        return centroid, color
+
+    def comp_centroid(self, c1, c2):
+        if c2 == []:
+            return False
+        for i in range(len(c1)):
+            if not all(c1[i]==c2[i]):
+                return False
+        return True
+        
+    # 0 req num
+    # 1 taxi num
+    # 2 empty num
+    def func_val(self, s):
+        return s[0]/(s[2] + 1) - s[1]
+        
+    def assign(k, state, centroid):
+        cen_val = [self.func_val(s) for s in centroid]
+        #print(cen_val)
+        all_val = [self.func_val(s) for s in state]
+        #print(all_val)
+        dist = np.array([np.abs(cen_val - val) for val in all_val])
+        #print(dist)
+        color = np.argmin(dist, axis=1)
+        #print(color)
+        return color
+        
+    # m*n -> k
+    def group(k, state, color):
+        group = [[] for _ in range(k)]
+        size = state.shape[1]*state.shape[2]
+        state = np.reshape(state, (4, size)).T
+        for i in range(size):
+            group[color[i]].append(state[i])
+        return group
+        
+    
     def _tmp_compute_reward(self, state):
         objective = np.ones((SIZE_R, SIZE_C))
         objective /= np.sum(objective)
