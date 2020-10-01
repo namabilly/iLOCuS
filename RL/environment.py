@@ -68,7 +68,7 @@ class Environment(object):
         state /= np.sum(state)
         state = state + 1e-5
         tmp_reward = -100 * objective * (np.log(objective / state))
-        return np.reshape((np.sum(tmp_reward) + 400)* np.ones((SIZE_R, SIZE_C)), SIZE_R * SIZE_C)
+        return np.reshape((np.sum(tmp_reward) + 400)* np.ones((SIZE_R,)), SIZE_R)
         # print(state)
         # print(objective)
         # tmp_reward = -10*(state/np.exp(1))*(np.log(state/(np.exp(1)*objective)))

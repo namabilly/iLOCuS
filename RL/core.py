@@ -138,12 +138,14 @@ class ReplayMemory:
             forward_states = self.stacked_retrieve(self.index-1)
         else:
             forward_states = self.stacked_retrieve(self.current_size - 1)
+        # print("===============fwdshape==============", np.expand_dims(forward_states, axis=0).shape)
         return np.expand_dims(forward_states, axis=0)
         # forward_states shape: (225, 5 + self.look_back_steps, 5, 5)
 
     def stacked_retrieve(self, sample_index):
         # m, d, n, n0, location, p0-pt
         stacked_state = np.zeros((3 + self.look_back_steps,) + SIZE)
+        # print("==================stacked state==================", stacked_state.shape)
         stacked_state[0:3,:] = self.buffer[sample_index].state
         if  self.buffer[sample_index-1] is not None:
             timestamp = self.buffer[sample_index-1].timestamp
@@ -154,7 +156,7 @@ class ReplayMemory:
                     stacked_state[- t,:] = self.buffer[local_index].action
         # else:
         #     print(sample_index)
-
+        # print("==========after========", stacked_state.shape)
         return stacked_state
 
     def clear(self):

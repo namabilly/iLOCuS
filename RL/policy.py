@@ -98,11 +98,11 @@ class GreedyEpsilonPolicy(Policy):
           The action index chosen.
         """
         _rand = np.random.rand(1, 1)
-        rand_action = np.random.randint(self.num_actions, size=(5, 5))
-        q_values = np.reshape(q_values, [10, 5, 5])
+        rand_action = np.random.randint(self.num_actions, size=(5,))
+        q_values = np.reshape(q_values, [10, 5])
         max_action = np.argmax(q_values, axis=0)
         # max_action = np.reshape(max_action, (-1,1))
-        action_map = np.reshape(max_action, (5, 5))
+        action_map = np.reshape(max_action, (5,))
         # print(action_map)
         _mask = _rand < self.epsilon
         res = _mask * rand_action + (1 - _mask) * max_action

@@ -12,7 +12,7 @@ import copy
 PRINT_INTERV = 100
 SIZE_R = 5
 SIZE_C = 5
-
+clus_n = 5
 
 class DQNAgent:
     """Class implementing DQN.
@@ -103,19 +103,21 @@ class DQNAgent:
         # print(x)
         y_next = self.calc_q_values(x_next, target_q)  # reserve the order in mini_batch
         # print(x_next)
-        tmp_y_next = np.reshape(y_next, [self.batch_size, 10, SIZE_R, SIZE_C])
-        y_max = np.reshape(np.amax(tmp_y_next, axis=1), [self.batch_size, SIZE_R, SIZE_C])
+        tmp_y_next = np.reshape(y_next, [self.batch_size, 10, clus_n])
+        y_max = np.reshape(np.amax(tmp_y_next, axis=1), [self.batch_size, clus_n])
         # Q learning update
         for _sample_index, (action, is_terminal, reward) in enumerate(other_infos):
+            # print("=========rew========", reward)
             for rew_index, _reward in enumerate(reward):
-                tmp_rew_index = np.unravel_index(rew_index, (SIZE_R, SIZE_C))
-                tmp_index = np.ravel_multi_index(((action[tmp_rew_index[0], tmp_rew_index[1]],)+ tmp_rew_index), (10, SIZE_R, SIZE_C))
+                #tmp_rew_index = np.unravel_index(rew_index, (K))
+                #tmp_index = np.ravel_multi_index(((action[tmp_rew_index])+ tmp_rew_index), (10, K))
+                tmp_index = rew_index
                 if is_terminal:
                     y[_sample_index, tmp_index] = _reward
                 else:
                     # print(y_max[_sample_index, tmp_rew_index[0], tmp_rew_index[1]])
                     # print(_reward)
-                    y[_sample_index, tmp_index] = _reward + self.gamma * y_max[_sample_index, tmp_rew_index[0], tmp_rew_index[1]]
+                    y[_sample_index, tmp_index] = _reward + self.gamma * y_max[_sample_index, rew_index]
         # print(x[:,-1,0,0])
         train_loss = self.q_network.train_on_batch(x, y)
         return train_loss
@@ -168,34 +170,39 @@ class DQNAgent:
             count_terminal = 0
             
             # k means clstering
-            prev_state, color = self.k_means(5, prev_state)
-            
+            prev_state, color = self.k_means(clus_n, prev_state)
+            # print(prev_state)            
+            # print(color)
             self.memory.append_state(prev_state)
             for t in range(max_episode_length):
                 # Generate samples according to different policy
                 if self.memory.current_size > self.num_burn_in:
                     fwd_states = self.memory.gen_forward_state()
+                    # print("===fwdstate===", fwd_states.shape)
                     fwd_res = self.calc_q_values(np.asarray(fwd_states), self.q_network)
+                    # print("===fwdres===", fwd_res.shape)
                     action_map = self.policy.select_action(fwd_res, True)
                     # print(action_map.shape)
                 else:
-                    action_map = np.random.randint(self.policy.num_actions, size=(SIZE_R,  SIZE_C))
+                    action_map = np.random.randint(self.policy.num_actions, size=clus_n)
                     # print(action_map.shape)
 
                 # action_map = np.reshape(_action, (SIZE_R, SIZE_C))
                 # Take 1 action
+                action_map = np.array(action_map)
+                action_map = np.squeeze(action_map)
                 # print(action_map)
-                
+                 
                 # map action from k to 5*5 according to group assignment
                 feed_action = np.zeros((SIZE_R, SIZE_C))
                 for i in range(len(color)):
                     feed_action[i // SIZE_C, i % SIZE_C] = action_map[color[i]]
-                
+                # print(feed_action)
                 next_state, reward, is_terminal = env.step(feed_action)
                 
                 # group state
-                next_state = self.group(5, next_state, color)
-                
+                next_state = np.asarray([np.mean(c, axis=0) for c in self.group(clus_n, next_state, color)]).T
+                # print(next_state)
                 # print("***training reward is...",reward)
                 # print(prev_state[1,:,:])
                 # print(next_state[1,:,:])
@@ -303,12 +310,12 @@ class DQNAgent:
                     self.memory.append_state(prev_state)
 
                 # evaluate
-                # if (episode_counter + 1) % 5 == 0:
-                #     mean_reward = self.evaluate(str(episode_counter), eval_env, eval_memory, eval_policy, 10, 50)
-                #     self.reward_log.write(str(mean_reward) + '\n')
-                #     with open('log/reward', 'a') as log_reward:
-                #         log_reward.write(str(mean_reward) + '\n')
-                #     print(' ********** episode {cnt} : average reward {rwd}'.format(cnt=episode_counter, rwd=mean_reward))
+                if (episode_counter + 1) % 5 == 0:
+                    mean_reward = self.evaluate(str(episode_counter), eval_env, eval_memory, eval_policy, 10, 50)
+                    self.reward_log.write(str(mean_reward) + '\n')
+                    with open('log/reward', 'a') as log_reward:
+                        log_reward.write(str(mean_reward) + '\n')
+                    print(' ********** episode {cnt} : average reward {rwd}'.format(cnt=episode_counter, rwd=mean_reward))
             episode_len.append(t)
 
     # def load_weights(self, filepath):
@@ -342,21 +349,24 @@ class DQNAgent:
         center = np.random.choice(size, k, replace=False)
         for c in center:
             centroid.append(state[:, c // state.shape[1], c % state.shape[1]])
-        state = np.reshape(state, (4, size)).T
+        state = np.reshape(state, (3, size)).T
         color = self.assign(k, state, centroid)
         precentroid = []
         iter = 0
         while (not self.comp_centroid(centroid, precentroid)):
             precentroid = centroid
             iter += 1
+            color = self.checkcolor(color, k)
             group = [[] for _ in range(k)]
             for i in range(size):
                 group[color[i]].append(state[i])
+            # print("====c====", iter, color)
+            # print(group)
             centroid = [np.mean(c, axis=0) for c in group]
             color = self.assign(k, state, centroid)
             if (iter >= max_iteration):
                 break
-        centroid = np.reshape(np.asarray(centroid).T, (4, k))
+        centroid = np.reshape(np.asarray(centroid).T, (3, k))
         return centroid, color
 
     def comp_centroid(self, c1, c2):
@@ -372,8 +382,29 @@ class DQNAgent:
     # 2 empty num
     def func_val(self, s):
         return s[0]/(s[2] + 1) - s[1]
-        
-    def assign(k, state, centroid):
+    
+    def checkcolor(self, color, k):
+        count = [0 for _ in range(k)]
+        for c in color:
+            count[c] += 1
+        for i in range(k):
+            if count[i] == 0:
+                maxI = 0
+                maxV = 0
+                for j in range(k):
+                    if count[j] > maxV:
+                        maxV = count[j]
+                        maxI = j
+                for j in range(len(color)):
+                    if color[j] == maxI:
+                        color[j] = i
+                        count[i] += 1
+                        count[maxI] -= 1
+                        break
+        return color    
+
+    def assign(self, k, state, centroid):
+        #print(centroid)
         cen_val = [self.func_val(s) for s in centroid]
         #print(cen_val)
         all_val = [self.func_val(s) for s in state]
@@ -385,10 +416,10 @@ class DQNAgent:
         return color
         
     # m*n -> k
-    def group(k, state, color):
+    def group(self, k, state, color):
         group = [[] for _ in range(k)]
         size = state.shape[1]*state.shape[2]
-        state = np.reshape(state, (4, size)).T
+        state = np.reshape(state, (3, size)).T
         for i in range(size):
             group[color[i]].append(state[i])
         return group
@@ -428,19 +459,24 @@ class DQNAgent:
             total_reward = 0
             eval_memory.clear()
             prev_state = eval_env.reset(seed=seed_[tmp_])
-            print("starting state is ", prev_state[1, :, :])
+            prev_state, color = self.k_means(5, prev_state)
+            print("starting state is ", prev_state[1, :])
             eval_memory.append_state(prev_state)
             for t in range(max_episode_length):
                 # Generate samples according to different policy
                 fwd_states = eval_memory.gen_forward_state()
                 fwd_res = self.calc_q_values(np.asarray(fwd_states), self.q_network)
                 action_map = eval_policy.select_action(fwd_res, False)
-
+                action_map = np.squeeze(action_map)
+                feed_action = np.zeros((SIZE_R, SIZE_C))
+                for i in range(len(color)):
+                    feed_action[i // SIZE_C, i % SIZE_C] = action_map[color[i]]
                 # action_map = np.reshape(_action, (SIZE_R, SIZE_C))
-                mean_cost += np.sum(action_map)
+                mean_cost += np.sum(feed_action)
 
                 # Take 1 action
-                next_state, reward, is_terminal = eval_env.step(action_map)
+                next_state, reward, is_terminal = eval_env.step(feed_action)
+                next_state = np.asarray([np.mean(c, axis=0) for c in self.group(clus_n, next_state, color)]).T
                 pricing_fp.write('state\n'+np.array2string(prev_state)+'\n')
                 pricing_fp.write('price\n'+np.array2string(action_map)+'\n')
 
@@ -448,11 +484,11 @@ class DQNAgent:
                 eval_memory.append_other(action_map, reward, t, is_terminal)
                 prev_state = copy.deepcopy(next_state)
                 eval_memory.append_state(prev_state)
-            kl_reward += self._tmp_compute_reward(next_state[1,:,:])
+            kl_reward += self._tmp_compute_reward(next_state[1,:])
 
             mean_reward += total_reward
             print("evaluating action map is ", action_map)
-            print("evaluating state is ", next_state[1,:,:])
+            print("evaluating state is ", next_state[1,:])
         pricing_fp.close()
         print(' ********** average cost',mean_cost/num_episodes/max_episode_length, "*********")
         return mean_reward / num_episodes/max_episode_length, kl_reward/num_episodes

@@ -77,7 +77,7 @@ def create_model(look_back_steps, input_shape, num_actions, model_name='q_networ
         full = LeakyReLU(alpha=0.2)(full)
         full = Dense(2560)(full)
         full = LeakyReLU(alpha=0.2)(full)
-        out = Dense(25*num_actions)(full)  # output layer has node number = num_actions
+        out = Dense(5*num_actions)(full)  # output layer has node number = num_actions
         # out = LeakyReLU(alpha=0.2)(full)
         model = Model(input=input_img, output=out)
     return model
