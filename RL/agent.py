@@ -8,6 +8,7 @@ import numpy as np
 import pickle
 import gc
 import copy
+from sklearn.cluster import KMeans
 
 PRINT_INTERV = 100
 SIZE_R = 5
@@ -150,6 +151,7 @@ class DQNAgent:
         episode_len = []
         best_reward = 0
         kl_reward_list = []
+        
         while True:
             if Q_update_counter > num_iterations:
                 break
@@ -170,7 +172,13 @@ class DQNAgent:
             count_terminal = 0
             
             # k means clstering
-            prev_state, color = self.k_means(clus_n, prev_state)
+            prev_state = np.reshape(prev_state, (SIZE_R * SIZE_C, 3))
+            k_means = KMeans(n_clusters=clus_n).fit(prev_state)
+            # prev_state, color = self.k_means(clus_n, prev_state)
+            color = k_means.labels_
+            with open('log/color', 'a') as log_color:
+                log_color.write(str(color)+'\n')
+            prev_state = k_means.cluster_centers_.T
             # print(prev_state)            
             # print(color)
             self.memory.append_state(prev_state)
@@ -208,7 +216,7 @@ class DQNAgent:
                 # print(next_state[1,:,:])
                 if is_terminal == True:
                     count_terminal += 1
-                    reward = -50*np.ones(SIZE_R*SIZE_C)
+                    reward = -50*np.ones(clus_n)
                 episode_reward.append(reward)
                 # append other infor to replay memory (action, reward, t, is_terminal)
                 self.memory.append_other(action_map, reward, t, is_terminal)
@@ -310,12 +318,12 @@ class DQNAgent:
                     self.memory.append_state(prev_state)
 
                 # evaluate
-                if (episode_counter + 1) % 5 == 0:
-                    mean_reward = self.evaluate(str(episode_counter), eval_env, eval_memory, eval_policy, 10, 50)
-                    self.reward_log.write(str(mean_reward) + '\n')
-                    with open('log/reward', 'a') as log_reward:
-                        log_reward.write(str(mean_reward) + '\n')
-                    print(' ********** episode {cnt} : average reward {rwd}'.format(cnt=episode_counter, rwd=mean_reward))
+                # if (episode_counter + 1) % 5 == 0:
+                #     mean_reward = self.evaluate(str(episode_counter), eval_env, eval_memory, eval_policy, 10, 50)
+                #     self.reward_log.write(str(mean_reward) + '\n')
+                #     with open('log/reward', 'a') as log_reward:
+                #         log_reward.write(str(mean_reward) + '\n')
+                #     print(' ********** episode {cnt} : average reward {rwd}'.format(cnt=episode_counter, rwd=mean_reward))
             episode_len.append(t)
 
     # def load_weights(self, filepath):
@@ -459,7 +467,11 @@ class DQNAgent:
             total_reward = 0
             eval_memory.clear()
             prev_state = eval_env.reset(seed=seed_[tmp_])
-            prev_state, color = self.k_means(5, prev_state)
+            # prev_state, color = self.k_means(5, prev_state)
+            prev_state = np.reshape(prev_state, (SIZE_R * SIZE_C, 3))
+            k_means = KMeans(n_clusters=clus_n).fit(prev_state)
+            color = k_means.labels_
+            prev_state = k_means.cluster_centers_.T
             print("starting state is ", prev_state[1, :])
             eval_memory.append_state(prev_state)
             for t in range(max_episode_length):
